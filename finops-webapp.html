@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>FinOps — Accounts Payable</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+* { font-family: 'Inter', system-ui, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; }
+
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes fadeIn  { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
+
+.fade-in   { animation: fadeIn  .2s ease-out both; }
+.slide-up  { animation: slideUp .25s ease-out both; }
+.spinner   { animation: spin .85s linear infinite; }
+.backdrop  { animation: backdropIn .15s ease-out both; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 2px; }
+
+/* table hover */
+.tr-hover:hover { background: #F8FAFC; }
+.tr-selected    { background: #F5F3FF !important; }
+
+/* sidebar link */
+.nav-link { display: flex; align-items: center; gap: 9px; padding: 7px 14px;
+  font-size: 13px; font-weight: 500; color: #94A3B8; border-radius: 7px;
+  cursor: pointer; transition: all .15s; text-decoration: none; }
+.nav-link:hover { color: #E2E8F0; background: rgba(255,255,255,.06); }
+.nav-link.active { color: #FFFFFF; background: rgba(255,255,255,.1); }
+.nav-link svg   { flex-shrink: 0; opacity: .65; }
+.nav-link.active svg { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ─── ICONS ──────────────────────────────────────────────── */
+const I = ({ d, size = 16, sw = 2, className = '', fill = 'none', stroke = 'currentColor' }) => {
+  const paths = Array.isArray(d) ? d : [d];
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke}
+      strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {paths.map((p, i) => <path key={i} d={p} />)}
+    </svg>
+  );
+};
+
+const SparkleIcon = ({ size = 13, color = '#7C3AED' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" fill={color}>
+    <path d="M8 1 L9.6 6.4 L15 8 L9.6 9.6 L8 15 L6.4 9.6 L1 8 L6.4 6.4 Z" />
+  </svg>
+);
+
+const ic = {
+  dash:    'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+  docs:    ['M9 12h6', 'M9 16h6', 'M4 4h16v16H4z'],
+  tx:      ['M17 1l4 4-4 4', 'M3 11V9a4 4 0 014-4h14', 'M7 23l-4-4 4-4', 'M21 13v2a4 4 0 01-4 4H3'],
+  ap:      ['M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z'],
+  vendor:  ['M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2', 'M9 11a4 4 0 100-8 4 4 0 000 8z', 'M23 21v-2a4 4 0 00-3-3.87', 'M16 3.13a4 4 0 010 7.75'],
+  cust:    ['M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2', 'M12 11a4 4 0 100-8 4 4 0 000 8z'],
+  ar:      ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'],
+  config:  ['M12 15a3 3 0 100-6 3 3 0 000 6z', 'M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z'],
+  gst:     ['M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z', 'M14 2v6h6', 'M16 13H8', 'M16 17H8', 'M10 9H8'],
+  plus:    ['M12 5v14', 'M5 12h14'],
+  search:  ['M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0'],
+  bell:    ['M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9', 'M13.73 21a2 2 0 01-3.46 0'],
+  x:       ['M18 6L6 18', 'M6 6l12 12'],
+  check:   'M20 6L9 17l-5-5',
+  chDown:  'M6 9l6 6 6-6',
+  chUp:    'M18 15l-6-6-6 6',
+  chRight: 'M9 18l6-6-6-6',
+  more:    ['M12 5h.01','M12 12h.01','M12 19h.01'],
+  upload:  ['M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4', 'M17 8l-5-5-5 5', 'M12 3v12'],
+  download:['M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4', 'M7 10l5 5 5-5', 'M12 15V3'],
+  link:    ['M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71',
+            'M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71'],
+  alert:   ['M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z',
+            'M12 9v4', 'M12 17h.01'],
+};
+
+/* ─── PRIMITIVES ─────────────────────────────────────────── */
+const Btn = ({ children, v = 'primary', s = 'md', className = '', onClick, disabled }) => {
+  const base = 'inline-flex items-center justify-center gap-1.5 font-semibold rounded-[8px] transition-all duration-150 active:scale-[.98] disabled:opacity-40 disabled:pointer-events-none';
+  const variants = {
+    primary: 'bg-violet-600 hover:bg-violet-700 text-white shadow-sm shadow-violet-200',
+    outline: 'border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 text-gray-700',
+    ghost:   'text-gray-600 hover:bg-gray-100 hover:text-gray-800',
+    danger:  'bg-red-500 hover:bg-red-600 text-white',
+  };
+  const sizes = { sm: 'px-3 py-1.5 text-[12px]', md: 'px-4 py-2 text-[13px]', lg: 'px-5 py-2.5 text-[13.5px]' };
+  return (
+    <button onClick={onClick} disabled={disabled}
+      className={`${base} ${variants[v]} ${sizes[s]} ${className}`}>
+      {children}
+    </button>
+  );
+};
+
+const Badge = ({ children, color = 'gray' }) => {
+  const colors = {
+    gray:    'bg-gray-100 text-gray-600',
+    green:   'bg-emerald-50 text-emerald-700',
+    red:     'bg-red-50 text-red-600',
+    amber:   'bg-amber-50 text-amber-700',
+    violet:  'bg-violet-50 text-violet-700',
+    blue:    'bg-blue-50 text-blue-700',
+  };
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-[3px] rounded-full text-[11.5px] font-medium ${colors[color]}`}>
+      {children}
+    </span>
+  );
+};
+
+const Sep = () => <div className="h-px bg-gray-100" />;
+
+const AINote = ({ children, className = '' }) => (
+  <div className={`flex gap-2.5 p-3 rounded-[10px] bg-violet-50 border border-violet-100 ${className}`}>
+    <div className="flex-shrink-0 mt-[2px]"><SparkleIcon size={12} /></div>
+    <p className="text-[12.5px] text-violet-900 leading-[1.55]">{children}</p>
+  </div>
+);
+
+/* ─── MODAL SHELL ────────────────────────────────────────── */
+const Modal = ({ open, children, maxW = 520 }) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop"
+      style={{ background: 'rgba(15,23,42,.45)', backdropFilter: 'blur(3px)' }}>
+      <div className="slide-up w-full bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+        style={{ maxWidth: maxW }}>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+/* ─── TABLE DATA ─────────────────────────────────────────── */
+const BILLS = [
+  { id:'BILL-1023', vendor:'Ravi Traders',         bdate:'28 Jan 2026', ddate:'15 Jan 2026', amt:'₹14,200',   status:'overdue',   sel:true  },
+  { id:'BILL-1024', vendor:'Tech Solutions Ltd',   bdate:'30 Jan 2026', ddate:'20 Jan 2026', amt:'₹8,400',    status:'overdue',   sel:true  },
+  { id:'BILL-1047', vendor:'Priya Enterprises',    bdate:'01 Feb 2026', ddate:'10 Feb 2026', amt:'₹22,500',   status:'soon',      sel:true  },
+  { id:'BILL-1050', vendor:'Amazon Web Services',  bdate:'01 Feb 2026', ddate:'15 Jan 2026', amt:'₹4,50,000', status:'overdue',   sel:true  },
+  { id:'BILL-1051', vendor:'Mahindra Logistics',   bdate:'02 Feb 2026', ddate:'14 Feb 2026', amt:'₹67,800',   status:'soon',      sel:true  },
+  { id:'BILL-1052', vendor:'Zomato Business',      bdate:'03 Feb 2026', ddate:'22 Feb 2026', amt:'₹12,300',   status:'scheduled', sel:false },
+  { id:'BILL-1053', vendor:'Tata Communications',  bdate:'03 Feb 2026', ddate:'25 Feb 2026', amt:'₹35,600',   status:'scheduled', sel:false },
+  { id:'BILL-1054', vendor:'Reliance Industries',  bdate:'04 Feb 2026', ddate:'18 Feb 2026', amt:'₹1,25,000', status:'scheduled', sel:false },
+  { id:'BILL-1055', vendor:'HDFC Bank Charges',    bdate:'04 Feb 2026', ddate:'28 Feb 2026', amt:'₹4,500',    status:'scheduled', sel:false },
+  { id:'BILL-1056', vendor:'Google India Pvt Ltd', bdate:'04 Feb 2026', ddate:'05 Mar 2026', amt:'₹89,000',   status:'scheduled', sel:false },
+];
+
+const statusBadge = s => {
+  if (s === 'overdue')   return <Badge color="red"><span className="w-[5px] h-[5px] rounded-full bg-red-400 inline-block" />Overdue</Badge>;
+  if (s === 'soon')      return <Badge color="amber"><span className="w-[5px] h-[5px] rounded-full bg-amber-400 inline-block" />Due soon</Badge>;
+  if (s === 'scheduled') return <Badge color="gray">Scheduled</Badge>;
+  if (s === 'synced')    return <Badge color="green"><span className="w-[5px] h-[5px] rounded-full bg-emerald-500 inline-block" />Synced</Badge>;
+  return null;
+};
+
+/* ─── SIDEBAR ────────────────────────────────────────────── */
+const NAV = [
+  { label: 'Dashboard',          icon: ic.dash },
+  { label: 'Statements',         icon: ic.docs },
+  { label: 'Transactions',       icon: ic.tx   },
+  { label: 'Accounts Payable',   icon: ic.ap, active: true },
+  { label: 'Vendors',            icon: ic.vendor },
+  { label: 'Customers',          icon: ic.cust   },
+  { label: 'Accounts Receivable',icon: ic.ar     },
+  { label: 'Configuration',      icon: ic.config },
+  { label: 'GST',                icon: ic.gst    },
+];
+
+const Sidebar = () => (
+  <div style={{ width: 220, background: '#0F172A', flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ padding: '16px 14px 12px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ width: 28, height: 28, background: '#7C3AED', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <SparkleIcon size={13} color="white" />
+        </div>
+        <span style={{ fontSize: 14, fontWeight: 700, color: '#F8FAFC', letterSpacing: '-.02em' }}>FinOps</span>
+      </div>
+    </div>
+
+    <nav style={{ flex: 1, padding: '10px 8px', overflowY: 'auto' }}>
+      {NAV.map(item => (
+        <a key={item.label} className={`nav-link ${item.active ? 'active' : ''}`}>
+          <I d={item.icon} size={15} stroke="currentColor" />
+          <span style={{ fontSize: 13 }}>{item.label}</span>
+        </a>
+      ))}
+    </nav>
+
+    <div style={{ padding: '12px 14px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'white' }}>SB</span>
+        </div>
+        <div>
+          <p style={{ fontSize: 12, fontWeight: 500, color: '#CBD5E1' }}>sandeep.balaji</p>
+          <p style={{ fontSize: 11, color: '#64748B' }}>Admin</p>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+/* ─── PRE-SYNC MODAL ──────────────────────────────────────── */
+const PreSyncModal = ({ onConfirm, onClose }) => {
+  const [confirmed, setConfirmed] = useState({});
+  const [open, setOpen] = useState('ledger');
+
+  const confirm = id => setConfirmed(c => ({ ...c, [id]: true }));
+
+  return (
+    <>
+      {/* Header */}
+      <div className="flex items-start justify-between px-6 pt-6 pb-4">
+        <div>
+          <div className="flex items-center gap-2 mb-0.5">
+            <SparkleIcon size={14} />
+            <h2 className="text-[15px] font-bold text-gray-900 tracking-[-0.02em]">Pre-Sync Validation</h2>
+          </div>
+          <p className="text-[12.5px] text-gray-500">Fin checked 12 selected bills — 10 ready, 2 issues found</p>
+        </div>
+        <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+          <I d={ic.x} size={15} />
+        </button>
+      </div>
+
+      {/* Progress */}
+      <div className="px-6 mb-4">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="flex-1 h-[6px] bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full rounded-full" style={{ width: '83%', background: 'linear-gradient(90deg,#10B981,#10B981 83%,#F59E0B 83%)' }} />
+          </div>
+          <div className="flex items-center gap-3 text-[12px] flex-shrink-0">
+            <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />10 Ready
+            </span>
+            <span className="flex items-center gap-1.5 text-amber-600 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-amber-500" />2 Issues
+            </span>
+          </div>
+        </div>
+        <AINote>I've already prepared a fix for each issue. Confirm to proceed, or override with your own choice.</AINote>
+      </div>
+
+      <Sep />
+
+      {/* Issues */}
+      <div className="px-6 py-4 space-y-3 overflow-y-auto" style={{ maxHeight: 300 }}>
+        {/* Unmapped Ledger */}
+        <div className="border border-amber-200 rounded-xl overflow-hidden">
+          <button onClick={() => setOpen(open === 'ledger' ? null : 'ledger')}
+            className="w-full flex items-center justify-between px-4 py-3 bg-amber-50 hover:bg-amber-100 text-left transition-colors">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              <span className="text-[13.5px] font-semibold text-gray-900">Unmapped Ledger</span>
+              <Badge color="amber">2 bills</Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11.5px] font-semibold text-emerald-600">High confidence</span>
+              <I d={open === 'ledger' ? ic.chUp : ic.chDown} size={13} className="text-gray-400" />
+            </div>
+          </button>
+          {open === 'ledger' && (
+            <div className="divide-y divide-gray-50 fade-in">
+              {[
+                { id:'b1023', bill:'BILL-1023', vendor:'Ravi Traders',     fix:"Create new ledger 'Ravi Traders' in Tally" },
+                { id:'b1047', bill:'BILL-1047', vendor:'Priya Enterprises', fix:"Map to existing 'Priya Ent. Ltd'" },
+              ].map(item => (
+                <div key={item.id} className={`px-4 py-3 transition-colors ${confirmed[item.id] ? 'bg-emerald-50' : 'bg-white'}`}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <span className="text-[13px] font-semibold text-violet-600">{item.bill}</span>
+                      <span className="text-[13px] text-gray-600 ml-1">'{item.vendor}'</span>
+                      <p className="text-[11.5px] text-gray-400 mt-0.5">No matching ledger in Tally</p>
+                    </div>
+                    {confirmed[item.id] && <Badge color="green"><I d={ic.check} size={10} />Confirmed</Badge>}
+                  </div>
+                  {!confirmed[item.id] ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 flex items-center gap-2 px-2.5 py-1.5 bg-violet-50 rounded-[8px] border border-violet-100">
+                        <SparkleIcon size={11} /><span className="text-[12px] text-violet-800 font-medium">{item.fix}</span>
+                      </div>
+                      <Btn v="primary" s="sm" onClick={() => confirm(item.id)}>Confirm</Btn>
+                      <Btn v="ghost"   s="sm">Override</Btn>
+                    </div>
+                  ) : (
+                    <p className="text-[12px] text-emerald-600 font-medium">{item.fix}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* GST Mismatch */}
+        <div className="border border-amber-200 rounded-xl overflow-hidden">
+          <button onClick={() => setOpen(open === 'gst' ? null : 'gst')}
+            className="w-full flex items-center justify-between px-4 py-3 bg-amber-50 hover:bg-amber-100 text-left transition-colors">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              <span className="text-[13.5px] font-semibold text-gray-900">GST Mismatch</span>
+              <Badge color="amber">1 bill</Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11.5px] font-semibold text-amber-600">Review suggested</span>
+              <I d={open === 'gst' ? ic.chUp : ic.chDown} size={13} className="text-gray-400" />
+            </div>
+          </button>
+          {open === 'gst' && (
+            <div className="px-4 py-3 bg-white fade-in">
+              <p className="text-[12.5px] text-gray-500 mb-2.5">BILL-1051 · Platform: 18% GST · Tally: 12% GST</p>
+              {!confirmed['gst'] ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 flex items-center gap-2 px-2.5 py-1.5 bg-violet-50 rounded-[8px] border border-violet-100">
+                    <SparkleIcon size={11} /><span className="text-[12px] text-violet-800 font-medium">Use platform rate (18%) — matches vendor agreement</span>
+                  </div>
+                  <Btn v="primary" s="sm" onClick={() => confirm('gst')}>Confirm</Btn>
+                  <Btn v="ghost"   s="sm">Override</Btn>
+                </div>
+              ) : (
+                <p className="text-[12px] text-emerald-600 font-medium">✓ Using platform rate (18%)</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Sep />
+
+      <div className="flex items-center justify-between px-6 py-4">
+        <button className="text-[13px] font-semibold text-violet-600 hover:text-violet-700 transition-colors">
+          Skip issues · Sync 10 ready →
+        </button>
+        <Btn v="primary" s="lg" onClick={onConfirm}>
+          <SparkleIcon size={13} color="white" />
+          Confirm All & Sync
+        </Btn>
+      </div>
+    </>
+  );
+};
+
+/* ─── SYNCING MODAL ──────────────────────────────────────── */
+const SyncingModal = ({ onDone }) => {
+  const [pct, setPct] = useState(0);
+  useEffect(() => {
+    let p = 0;
+    const iv = setInterval(() => { p += Math.random() * 8 + 3; if (p > 99) p = 99; setPct(Math.round(p)); }, 60);
+    const done = setTimeout(() => { clearInterval(iv); setPct(100); setTimeout(onDone, 300); }, 2000);
+    return () => { clearInterval(iv); clearTimeout(done); };
+  }, []);
+
+  return (
+    <div className="px-8 py-10 text-center">
+      <div className="flex justify-center mb-5">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="spinner">
+          <circle cx="24" cy="24" r="19" stroke="#F1F5F9" strokeWidth="2.5" />
+          <path d="M43 24 A19 19 0 0 0 24 5" stroke="#7C3AED" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+      </div>
+      <h3 className="text-[15px] font-semibold text-gray-900 mb-1 tracking-[-0.02em]">Syncing 12 bills to Tally</h3>
+      <p className="text-[12.5px] text-gray-400 mb-5">Don't close this window</p>
+      <div className="h-[5px] bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-full bg-violet-500 rounded-full transition-all duration-100" style={{ width: `${pct}%` }} />
+      </div>
+      <p className="text-[11.5px] text-gray-400 mt-2">{pct}%</p>
+    </div>
+  );
+};
+
+/* ─── SYNC COMPLETE MODAL ────────────────────────────────── */
+const SyncCompleteModal = ({ onClose, onResync }) => {
+  const [open, setOpen] = useState('dup');
+  const [fixed, setFixed] = useState({});
+
+  const fixAll = () => setFixed({ b1043: true, b1044: true, b1050: true });
+
+  return (
+    <>
+      <div className="flex items-start justify-between px-6 pt-6 pb-4">
+        <div>
+          <h2 className="text-[15px] font-bold text-gray-900 tracking-[-0.02em] mb-0.5">Sync Complete</h2>
+          <p className="text-[12.5px] text-gray-400">4 Feb 2026, 9:34 PM</p>
+        </div>
+        <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+          <I d={ic.x} size={15} />
+        </button>
+      </div>
+
+      {/* stats bar */}
+      <div className="px-6 mb-4">
+        <div className="flex items-center gap-4 mb-2">
+          {[
+            { dot:'bg-emerald-500', text:'38 synced', c:'text-emerald-600' },
+            { dot:'bg-red-400',     text:'6 failed',  c:'text-red-500'     },
+          ].map(s => (
+            <div key={s.text} className="flex items-center gap-2">
+              <span className={`w-2.5 h-2.5 rounded-full ${s.dot}`} />
+              <span className={`text-[13px] font-bold ${s.c}`}>{s.text}</span>
+            </div>
+          ))}
+        </div>
+        <div className="h-[6px] bg-gray-100 rounded-full overflow-hidden flex">
+          <div className="bg-emerald-500 rounded-l-full" style={{ width: '86.4%' }} />
+          <div className="bg-red-400 rounded-r-full" style={{ width: '13.6%' }} />
+        </div>
+      </div>
+
+      <div className="px-6 mb-4">
+        <AINote>
+          Duplicate voucher numbers suggest someone entered data directly into Tally today. I can reassign numbers automatically — this won't affect your accounting records.
+        </AINote>
+      </div>
+
+      <Sep />
+
+      <div className="px-6 py-4 overflow-y-auto space-y-2" style={{ maxHeight: 280 }}>
+        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Needs Attention</p>
+
+        {/* Duplicate Voucher */}
+        <div className="border border-red-100 rounded-xl overflow-hidden">
+          <button onClick={() => setOpen(open === 'dup' ? null : 'dup')}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 text-left transition-colors">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-400" />
+              <span className="text-[13.5px] font-semibold text-gray-900">Duplicate Voucher Number</span>
+              <Badge color="red">3 bills</Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge color="violet"><SparkleIcon size={9} />AI can fix</Badge>
+              <I d={open === 'dup' ? ic.chUp : ic.chDown} size={13} className="text-gray-400" />
+            </div>
+          </button>
+          {open === 'dup' && (
+            <div className="bg-gray-50 border-t border-gray-100 fade-in">
+              <div className="px-4 pt-3 pb-2">
+                <div className="flex gap-2 p-2.5 bg-violet-50 rounded-[8px] border border-violet-100">
+                  <SparkleIcon size={11} /><p className="text-[12px] text-violet-900">BILL-1043 has VCH-4421 which already exists — likely entered manually in Tally this morning. I'll assign the next available numbers.</p>
+                </div>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {[
+                  { id:'b1043', bill:'BILL-1043', old:'VCH-4421', neu:'VCH-4431' },
+                  { id:'b1044', bill:'BILL-1044', old:'VCH-4422', neu:'VCH-4432' },
+                  { id:'b1050', bill:'BILL-1050', old:'VCH-4430', neu:'VCH-4433' },
+                ].map(row => (
+                  <div key={row.id} className={`flex items-center justify-between px-4 py-2.5 transition-colors ${fixed[row.id] ? 'bg-emerald-50' : 'bg-white'}`}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[12.5px] font-semibold text-violet-600">{row.bill}</span>
+                      <span className="text-[12px] text-gray-400 line-through">{row.old}</span>
+                      <I d="M5 12h14M12 5l7 7-7 7" size={10} className="text-gray-300" />
+                      <span className="text-[12px] font-semibold text-emerald-600">{row.neu}</span>
+                    </div>
+                    {fixed[row.id]
+                      ? <Badge color="green">Fixed</Badge>
+                      : <div className="flex gap-1">
+                          <Btn v="primary" s="sm" onClick={() => setFixed(f => ({...f,[row.id]:true}))}>Apply</Btn>
+                          <Btn v="ghost"   s="sm">Skip</Btn>
+                        </div>}
+                  </div>
+                ))}
+                <div className="px-4 py-2 bg-white">
+                  <button onClick={fixAll} className="text-[12px] font-semibold text-violet-600 hover:text-violet-700 transition-colors">
+                    Apply all 3 fixes automatically →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {['Ledger Not Found|2 bills', 'Company Not Loaded|1 bill'].map(s => {
+          const [label, count] = s.split('|');
+          return (
+            <div key={label} className="border border-red-100 rounded-xl">
+              <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-400" />
+                  <span className="text-[13.5px] font-semibold text-gray-900">{label}</span>
+                  <Badge color="red">{count}</Badge>
+                </div>
+                <I d={ic.chRight} size={13} className="text-gray-300" />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <Sep />
+
+      <div className="flex items-center justify-between px-6 py-4">
+        <Btn v="outline" onClick={onClose}>Close</Btn>
+        <Btn v="primary" s="lg" onClick={onResync}>
+          <SparkleIcon size={13} color="white" />
+          Re-sync with Fin's Fixes
+        </Btn>
+      </div>
+    </>
+  );
+};
+
+/* ─── BALANCE MISMATCH MODAL ─────────────────────────────── */
+const BalanceModal = ({ onClose }) => {
+  const [expanded, setExpanded] = useState('ravi');
+  const [resolved, setResolved]  = useState({});
+
+  const resolve = k => setResolved(r => ({ ...r, [k]: true }));
+
+  return (
+    <>
+      <div className="flex items-start justify-between px-6 pt-6 pb-4">
+        <div>
+          <h2 className="text-[15px] font-bold text-gray-900 tracking-[-0.02em] mb-0.5">Balance Mismatch Review</h2>
+          <p className="text-[12.5px] text-gray-500">Comparing platform records with Tally</p>
+        </div>
+        <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+          <I d={ic.x} size={15} />
+        </button>
+      </div>
+
+      <div className="px-6 mb-4">
+        <AINote>
+          BILL-1067 likely failed during the 1 Feb sync. VCH-Manual (₹3,200) appears to have been entered directly in Tally on 30 Jan — causing a ₹5,300 discrepancy for Ravi Traders. Recommendation: sync BILL-1067 to Tally and import VCH-Manual to platform.
+        </AINote>
+      </div>
+
+      <Sep />
+
+      <div className="px-6 py-4 space-y-3 overflow-y-auto" style={{ maxHeight: 360 }}>
+        {/* Ravi Traders */}
+        <div className="border border-gray-200 rounded-xl overflow-hidden">
+          <button onClick={() => setExpanded(expanded === 'ravi' ? null : 'ravi')}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 text-left transition-colors">
+            <div className="flex items-center gap-2">
+              <I d={expanded === 'ravi' ? ic.chDown : ic.chRight} size={14} className="text-gray-400" />
+              <span className="text-[13.5px] font-semibold text-gray-900">Ravi Traders</span>
+              <Badge color="red">Mismatch</Badge>
+            </div>
+            <span className="text-[13px] font-bold text-red-500">Δ ₹5,300</span>
+          </button>
+
+          {expanded === 'ravi' && (
+            <div className="border-t border-gray-100 fade-in">
+              {/* col headers */}
+              <div className="grid grid-cols-2">
+                {[
+                  { bg: '#F5F3FF', dot: '#C4B5FD', label: 'PLATFORM', tc: '#6D28D9' },
+                  { bg: '#FFF7ED', dot: '#FCD34D', label: 'TALLY',    tc: '#B45309' },
+                ].map(h => (
+                  <div key={h.label} className="flex items-center gap-1.5 px-4 py-2"
+                    style={{ background: h.bg, borderRight: h.label === 'PLATFORM' ? '1px solid #F3F4F6' : 'none' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: h.dot, display:'inline-block' }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: h.tc, textTransform:'uppercase', letterSpacing:'.06em' }}>{h.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Row 1: matched */}
+              <div className="grid grid-cols-2 border-t border-gray-50">
+                <div className="px-4 py-3 border-r border-gray-50">
+                  <p className="text-[12.5px] font-semibold text-gray-800">BILL-1023 · ₹14,200</p>
+                  <p className="text-[11.5px] text-gray-400">28 Jan</p>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-3">
+                  <I d={ic.check} size={13} className="text-emerald-500 flex-shrink-0" />
+                  <div><p className="text-[12.5px] font-semibold text-gray-800">BILL-1023 · ₹14,200</p><p className="text-[11.5px] text-gray-400">28 Jan</p></div>
+                </div>
+              </div>
+
+              {/* Row 2: missing from Tally */}
+              <div className="grid grid-cols-2 border-t border-gray-50" style={{ background: 'rgba(239,68,68,.03)' }}>
+                <div className="px-4 py-3 border-r border-gray-50">
+                  <p className="text-[12.5px] font-semibold text-gray-800 mb-0.5">BILL-1067 · ₹8,500</p>
+                  <p className="text-[11.5px] text-gray-400 mb-2">1 Feb · Sync failed</p>
+                  {!resolved['b1067']
+                    ? <div className="flex gap-1.5">
+                        <Btn v="primary" s="sm" onClick={() => resolve('b1067')}>
+                          <I d={ic.upload} size={11} />Sync to Tally
+                        </Btn>
+                        <Btn v="ghost" s="sm">Flag</Btn>
+                      </div>
+                    : <Badge color="green">Queued for sync</Badge>}
+                </div>
+                <div className="flex items-start gap-2 px-4 py-3">
+                  <I d={ic.x} size={13} className="text-red-400 flex-shrink-0 mt-1" />
+                  <div className="flex-1 px-2.5 py-1.5 bg-red-50 border border-red-100 rounded-[7px]">
+                    <span className="text-[12px] font-semibold text-red-600">Not found in Tally</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 3: Tally-only */}
+              <div className="grid grid-cols-2 border-t border-gray-50" style={{ background: 'rgba(245,158,11,.03)' }}>
+                <div className="flex items-start gap-2 px-4 py-3 border-r border-gray-50">
+                  <I d={ic.x} size={13} className="text-red-400 flex-shrink-0 mt-1" />
+                  <div className="flex-1 px-2.5 py-1.5 bg-gray-100 border border-gray-200 rounded-[7px]">
+                    <span className="text-[12px] font-semibold text-gray-500">Not on platform</span>
+                  </div>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="text-[12.5px] font-semibold text-gray-800 mb-0.5">VCH-Manual · ₹3,200</p>
+                  <p className="text-[11.5px] text-gray-400 mb-2">30 Jan · Direct Tally entry</p>
+                  {!resolved['vch']
+                    ? <div className="flex gap-1.5">
+                        <Btn v="outline" s="sm" onClick={() => resolve('vch')}>
+                          <I d={ic.download} size={11} />Import
+                        </Btn>
+                        <Btn v="ghost" s="sm">Resolve</Btn>
+                      </div>
+                    : <Badge color="green">Imported</Badge>}
+                </div>
+              </div>
+
+              {/* totals */}
+              <div className="grid grid-cols-2 border-t border-gray-100 bg-gray-50">
+                <div className="px-4 py-2.5 border-r border-gray-100">
+                  <p className="text-[11px] text-gray-400 mb-0.5">Platform total</p>
+                  <p className="text-[13.5px] font-bold text-gray-900">₹22,700</p>
+                </div>
+                <div className="flex items-center justify-between px-4 py-2.5">
+                  <div>
+                    <p className="text-[11px] text-gray-400 mb-0.5">Tally total</p>
+                    <p className="text-[13.5px] font-bold text-gray-900">₹17,400</p>
+                  </div>
+                  <Badge color="red">Δ ₹5,300</Badge>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Priya Enterprises (collapsed) */}
+        <div className="border border-gray-200 rounded-xl">
+          <button className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 text-left transition-colors">
+            <div className="flex items-center gap-2">
+              <I d={ic.chRight} size={14} className="text-gray-400" />
+              <span className="text-[13.5px] font-semibold text-gray-900">Priya Enterprises</span>
+              <Badge color="red">Mismatch</Badge>
+            </div>
+            <span className="text-[13px] font-bold text-red-500">Δ ₹500</span>
+          </button>
+        </div>
+      </div>
+
+      <Sep />
+
+      <div className="flex items-center justify-between px-6 py-4">
+        <Btn v="primary" s="lg">
+          <SparkleIcon size={13} color="white" />
+          Apply Fin's Recommendations
+        </Btn>
+        <button className="flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-700 font-medium transition-colors">
+          <I d={ic.link} size={13} />Export Comparison
+        </button>
+      </div>
+    </>
+  );
+};
+
+/* ─── MAIN APP ───────────────────────────────────────────── */
+const App = () => {
+  const [modal,    setModal]    = useState(null);   // null|presync|syncing|complete|balance
+  const [selected, setSelected] = useState(new Set(BILLS.filter(b => b.sel).map(b => b.id)));
+  const [bannerVisible, setBanner] = useState(true);
+  const [synced, setSynced] = useState(false);
+
+  const openSync = () => { if (selected.size > 0) setModal('presync'); };
+  const confirmSync = () => { setModal('syncing'); };
+  const syncDone = () => { setSynced(true); setModal('complete'); };
+
+  const toggleRow = id => setSelected(s => {
+    const ns = new Set(s);
+    ns.has(id) ? ns.delete(id) : ns.add(id);
+    return ns;
+  });
+
+  const selCount = selected.size;
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      <Sidebar />
+
+      {/* main content */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#F8FAFC' }}>
+
+        {/* AI banner */}
+        {bannerVisible && (
+          <div className="flex items-center justify-between px-6 py-2.5 border-b"
+            style={{ background: '#F5F3FF', borderColor: '#DDD6FE' }}>
+            <div className="flex items-center gap-2">
+              <SparkleIcon size={13} />
+              <span className="text-[12.5px] font-medium text-violet-900">
+                Fin found balance discrepancies in <strong>2 vendors</strong> after last sync
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Btn v="primary" s="sm" onClick={() => setModal('balance')}>Review</Btn>
+              <button onClick={() => setBanner(false)} className="w-6 h-6 flex items-center justify-center text-violet-400 hover:text-violet-600 transition-colors">
+                <I d={ic.x} size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* page header */}
+        <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-100">
+          <div>
+            <p className="text-[11.5px] text-gray-400 mb-0.5">Accounts Payable</p>
+            <h1 className="text-[18px] font-bold text-gray-900 tracking-[-0.03em]">Bills</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
+              <I d={ic.search} size={16} />
+            </button>
+            <button className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 transition-colors relative">
+              <I d={ic.bell} size={16} />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-500 border-2 border-white" />
+            </button>
+            <Btn v="primary" s="md" onClick={openSync} disabled={selCount === 0}>
+              <SparkleIcon size={12} color="white" />
+              {selCount > 0 ? `Sync ${selCount} to Tally` : 'Sync to Tally'}
+            </Btn>
+          </div>
+        </div>
+
+        {/* summary cards */}
+        <div className="grid grid-cols-3 gap-4 px-6 pt-5 pb-4">
+          {[
+            { label: 'Total Outstanding', val: '₹8,30,100', sub: 'across 10 vendors',       color: 'text-gray-900' },
+            { label: 'Overdue',           val: '₹4,87,600', sub: '3 vendors need attention', color: 'text-red-600'  },
+            { label: 'Due in 7 Days',     val: '₹90,300',   sub: '2 bills approaching',      color: 'text-amber-600'},
+          ].map(card => (
+            <div key={card.label} className="bg-white rounded-xl border border-gray-200 px-4 py-4 shadow-sm">
+              <p className="text-[12px] text-gray-400 font-medium mb-1">{card.label}</p>
+              <p className={`text-[20px] font-bold tracking-[-0.03em] ${card.color}`}>{card.val}</p>
+              <p className="text-[11.5px] text-gray-400 mt-0.5">{card.sub}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* table */}
+        <div className="flex-1 overflow-auto px-6 pb-6">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            {/* table header */}
+            <div className="grid border-b border-gray-100 bg-gray-50"
+              style={{ gridTemplateColumns: '40px 1fr 1fr 110px 110px 120px 120px 40px' }}>
+              {['', 'Bill #', 'Vendor', 'Bill Date', 'Due Date', 'Amount', 'Status', ''].map((h, i) => (
+                <div key={i} className="px-3 py-3">
+                  <span className="text-[11.5px] font-semibold text-gray-400 uppercase tracking-wider">{h}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* table body */}
+            {BILLS.map(bill => {
+              const isSel = selected.has(bill.id);
+              return (
+                <div key={bill.id}
+                  className={`grid border-b border-gray-50 tr-hover transition-colors cursor-pointer ${isSel ? 'tr-selected' : ''}`}
+                  style={{ gridTemplateColumns: '40px 1fr 1fr 110px 110px 120px 120px 40px' }}
+                  onClick={() => toggleRow(bill.id)}>
+                  <div className="flex items-center justify-center px-3 py-3">
+                    <div className={`w-[15px] h-[15px] rounded-[4px] border-[1.5px] flex items-center justify-center transition-colors flex-shrink-0 ${
+                      isSel ? 'bg-violet-600 border-violet-600' : 'border-gray-300 bg-white'}`}>
+                      {isSel && <I d={ic.check} size={9} className="text-white" sw={2.5} />}
+                    </div>
+                  </div>
+                  <div className="flex items-center px-3 py-3">
+                    <span className="text-[12.5px] font-semibold text-violet-600 hover:text-violet-700">{bill.id}</span>
+                  </div>
+                  <div className="flex items-center px-3 py-3">
+                    <span className="text-[12.5px] text-gray-700 font-medium">{bill.vendor}</span>
+                  </div>
+                  <div className="flex items-center px-3 py-3">
+                    <span className="text-[12.5px] text-gray-500">{bill.bdate}</span>
+                  </div>
+                  <div className="flex items-center px-3 py-3">
+                    <span className={`text-[12.5px] font-medium ${bill.status === 'overdue' ? 'text-red-500' : 'text-gray-500'}`}>
+                      {bill.ddate}
+                    </span>
+                  </div>
+                  <div className="flex items-center px-3 py-3">
+                    <span className="text-[12.5px] font-semibold text-gray-800">{bill.amt}</span>
+                  </div>
+                  <div className="flex items-center px-3 py-3">
+                    {statusBadge(synced && isSel ? 'synced' : bill.status)}
+                  </div>
+                  <div className="flex items-center justify-center px-3 py-3">
+                    <button className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-500 transition-colors"
+                      onClick={e => e.stopPropagation()}>
+                      <I d={ic.more} size={14} sw={2.5} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* pagination footer */}
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+              <span className="text-[12px] text-gray-400">Showing 10 of 18 invoices</span>
+              <div className="flex gap-1.5">
+                {['Previous', 'Next'].map(l => (
+                  <Btn key={l} v="outline" s="sm">{l}</Btn>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* MODALS */}
+      <Modal open={modal === 'presync'} maxW={530}>
+        <PreSyncModal onConfirm={confirmSync} onClose={() => setModal(null)} />
+      </Modal>
+
+      <Modal open={modal === 'syncing'} maxW={360}>
+        <SyncingModal onDone={syncDone} />
+      </Modal>
+
+      <Modal open={modal === 'complete'} maxW={530}>
+        <SyncCompleteModal onClose={() => setModal(null)} onResync={() => setModal('presync')} />
+      </Modal>
+
+      <Modal open={modal === 'balance'} maxW={620}>
+        <BalanceModal onClose={() => setModal(null)} />
+      </Modal>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

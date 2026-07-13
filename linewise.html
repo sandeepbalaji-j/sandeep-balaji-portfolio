@@ -1,0 +1,3481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>linewise</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%232F4A3A'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F5F0;
+    --ink: #1A1A1A;
+    --muted: #6B6560;
+    --accent: #2F4A3A;
+    --red: #A64530;
+    --prbg: #EBE9E4;
+    --rule: rgba(0, 0, 0, 0.15);
+    --rule-soft: rgba(0, 0, 0, 0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { background: var(--bg); }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.01em;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* paper grain: fixed noise overlay, invisible except on close inspection */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)'/%3E%3C/svg%3E");
+  }
+
+  ::selection { background: var(--accent); color: var(--bg); }
+
+  button { font-family: inherit; letter-spacing: inherit; color: inherit; }
+  button:focus-visible, textarea:focus-visible, input:focus-visible, a:focus-visible {
+    outline: 1px solid var(--ink);
+    outline-offset: 3px;
+  }
+
+  .hidden { display: none !important; }
+
+  /* ---------- score bar (printer's rule) ---------- */
+
+  svg.sbar { display: block; }
+  .sbar rect { shape-rendering: crispEdges; }
+
+  /* ---------- editorial diff ---------- */
+
+  .diff del {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+    text-decoration-color: var(--ink);
+  }
+  .diff ins {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-decoration-color: var(--accent);
+    text-underline-offset: 4px;
+  }
+
+  .marginalia {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 12px;
+    line-height: 1.55;
+    letter-spacing: 0.01em;
+    color: var(--muted);
+  }
+
+  /* ---------- shared type ---------- */
+
+  .kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .mono-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+
+  .cta {
+    display: inline-block;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 0;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 16px 32px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 150ms ease-out;
+  }
+  .cta:hover { background: #263D2F; }
+  .cta:active { background: #1E3226; }
+
+  .ghost-btn {
+    font-size: 12px;
+    color: var(--muted);
+    background: none;
+    border: none;
+    padding: 4px 0;
+    cursor: pointer;
+    transition: color 150ms ease-out;
+  }
+  .ghost-btn:hover { color: var(--ink); }
+
+  /* ---------- landing ---------- */
+
+  #landing.fading { opacity: 0; }
+  #landing { transition: opacity 300ms ease-out; }
+
+  .reveal {
+    opacity: 0;
+    animation: rise 640ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .lw-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 28px 48px;
+  }
+  .wordmark {
+    font-family: 'Newsreader', serif;
+    font-weight: 500;
+    font-size: 24px;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .lw-nav { display: flex; gap: 28px; }
+  .lw-nav span {
+    font-size: 14px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 150ms ease-out;
+  }
+  .lw-nav span:hover { color: var(--ink); }
+
+  .lw-page {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 0 48px 140px;
+  }
+
+  .lw-hero { padding-top: 88px; }
+
+  .headline {
+    font-family: 'Newsreader', serif;
+    font-weight: 400;
+    font-size: clamp(46px, 7vw, 92px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin-top: 40px;
+    max-width: 980px;
+    text-wrap: balance;
+  }
+
+  .sub {
+    margin-top: 30px;
+    max-width: 520px;
+    font-size: 17px;
+    color: var(--muted);
+  }
+
+  .lw-hero .cta { margin-top: 48px; }
+
+  .lw-objection { margin-top: 176px; }
+
+  .lw-h2 {
+    font-family: 'Newsreader', serif;
+    font-weight: 400;
+    font-size: clamp(30px, 3.6vw, 46px);
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    margin-top: 28px;
+    max-width: 760px;
+    text-wrap: balance;
+  }
+
+  .cmp { margin-top: 56px; max-width: 880px; }
+  .cmp-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .cmp-row span {
+    padding: 17px 32px 17px 0;
+    font-size: 15px;
+  }
+  .cmp-row span:last-child {
+    border-left: 1px solid var(--rule);
+    padding-left: 32px;
+  }
+  .cmp-head { border-bottom: 1px solid var(--rule); }
+  .cmp-head span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .cmp-row span:first-child { color: var(--muted); }
+  .cmp-head span:first-child { color: var(--muted); }
+
+  .shot-cap {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 19px;
+    margin-top: 16px;
+  }
+
+  /* ---------- landing live demonstration ---------- */
+
+  .lw-demo { margin-top: 176px; }
+  .demo { max-width: 720px; }
+  .demo-str {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+  .demo-rows { margin-top: 44px; }
+  .demo-row { display: flex; align-items: center; gap: 16px; padding: 5px 0; }
+  .demo-lab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    width: 130px;
+    flex: none;
+  }
+  .demo-barwrap { flex: 1; max-width: 280px; }
+  .demo-barwrap svg { display: block; width: 100%; height: 12px; }
+  .demo-overall { margin-top: 44px; display: flex; align-items: baseline; gap: 14px; }
+  .demo-num {
+    font-family: 'Newsreader', serif;
+    font-weight: 300;
+    font-size: 64px;
+    line-height: 1;
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+  .demo-rw {
+    margin-top: 44px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    line-height: 1.5;
+    min-height: 100px;
+    word-break: break-word;
+  }
+  .tcur {
+    display: inline-block;
+    width: 0.55em;
+    height: 1.05em;
+    background: var(--ink);
+    vertical-align: -0.18em;
+    margin-left: 2px;
+    animation: blink 1.06s steps(1) infinite;
+  }
+  .tcur.off { display: none; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .lw-final { margin-top: 160px; }
+
+  .foot-note {
+    margin-top: 128px;
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 420px;
+  }
+
+  /* ---------- workspace shell ---------- */
+
+  #workspace.fade-in { animation: fadein 300ms ease-out both; }
+  @keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 52px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .top-left { display: flex; align-items: center; gap: 14px; }
+  .menu-btn {
+    display: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  .ws-pill {
+    font-size: 13px;
+    font-weight: 500;
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: border-color 150ms ease-out;
+  }
+  .ws-pill:hover { border-color: rgba(0, 0, 0, 0.35); }
+  .ws-pill .chev { color: var(--muted); font-size: 10px; margin-left: 4px; }
+
+  .top-right { display: flex; align-items: center; gap: 4px; }
+  .icon-btn {
+    position: relative;
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 150ms ease-out;
+    line-height: 0;
+  }
+  .icon-btn:hover { opacity: 1; }
+  .badge {
+    position: absolute;
+    top: 0;
+    right: -1px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    line-height: 1;
+    background: var(--red);
+    color: var(--bg);
+    padding: 2px 4px;
+    border-radius: 2px;
+  }
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    margin-left: 10px;
+  }
+
+  .shell { display: flex; align-items: stretch; }
+
+  .sidebar {
+    width: 240px;
+    flex: 0 0 240px;
+    border-right: 1px solid var(--rule-soft);
+    padding: 32px 0 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: sticky;
+    top: 52px;
+    height: calc(100vh - 52px);
+    overflow-y: auto;
+  }
+  .ws-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 24px;
+    margin-bottom: 28px;
+  }
+  .ws-abbr { display: none; }
+  .nav-item {
+    display: block;
+    padding: 10px 24px;
+    font-size: 15px;
+    color: var(--ink);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: background 150ms ease-out;
+  }
+  .nav-item:hover { background: rgba(0, 0, 0, 0.03); }
+  .nav-item.active {
+    border-left-color: var(--accent);
+    font-weight: 500;
+  }
+  .nav-i { display: none; font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+
+  .side-foot { padding: 0 24px; }
+  .side-link {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 5px 0;
+    transition: color 150ms ease-out;
+  }
+  .side-link:hover { color: var(--ink); }
+  .side-word {
+    display: inline-block;
+    font-family: 'Newsreader', serif;
+    font-size: 17px;
+    color: var(--muted);
+    text-decoration: none;
+    margin-top: 16px;
+    transition: color 150ms ease-out;
+  }
+  .side-word:hover { color: var(--ink); }
+
+  main#main {
+    flex: 1;
+    min-width: 0;
+    padding: 56px 56px 140px;
+    max-width: 1060px;
+  }
+
+  .page-title {
+    font-family: 'Newsreader', serif;
+    font-weight: 400;
+    font-size: 40px;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+  .page-sub { color: var(--muted); font-size: 15px; margin-top: 8px; }
+
+  /* ---------- stat bar ---------- */
+
+  .statbar { display: flex; flex-wrap: wrap; row-gap: 24px; margin-top: 40px; }
+  .stat { padding: 4px 32px; border-left: 1px solid var(--rule); }
+  .stat:first-child { padding-left: 0; border-left: none; }
+  .stat-v {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    line-height: 1.2;
+  }
+  .stat-l {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .up { color: var(--accent); }
+  .warn { color: var(--red); }
+  .warn-dot { color: var(--red); font-size: 10px; vertical-align: 2px; margin-right: 7px; }
+
+  /* ---------- inventory ---------- */
+
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 18px 0 16px;
+    border-bottom: 1px solid var(--rule);
+    margin-top: 28px;
+  }
+  #invSearch {
+    flex: 1 1 170px;
+    max-width: 250px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--rule);
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.01em;
+    font-size: 14px;
+    padding: 6px 0;
+    color: var(--ink);
+  }
+  #invSearch:focus { outline: none; border-bottom-color: rgba(0, 0, 0, 0.45); }
+  #invSearch::placeholder { color: var(--muted); opacity: 0.65; }
+
+  .chip-wrap { position: relative; display: inline-block; }
+  .fchip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: color 150ms ease-out, border-color 150ms ease-out;
+  }
+  .fchip:hover { color: var(--ink); border-color: rgba(0, 0, 0, 0.35); }
+  .fchip.set { color: var(--ink); border-color: rgba(0, 0, 0, 0.4); }
+  .fmenu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 168px;
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    z-index: 60;
+  }
+  .fmenu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 9px 12px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .fmenu button:hover { background: rgba(0, 0, 0, 0.04); }
+  .fmenu button.cur { font-weight: 600; }
+  .add-btn {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: color 150ms ease-out, border-color 150ms ease-out;
+  }
+  .add-btn:hover { color: var(--ink); border-color: rgba(0, 0, 0, 0.35); }
+
+  table.inv { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .inv th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 400;
+    text-align: left;
+    padding: 12px 24px 12px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .inv th.c-string { width: 34%; }
+  .inv th.c-source { width: 18%; }
+  .inv th:nth-child(3) { width: 9%; }
+  .inv th:nth-child(4) { width: 16%; }
+  .inv th:nth-child(5) { width: 13%; }
+  .inv th:nth-child(6) { width: 10%; text-align: right; padding-right: 0; }
+  .inv td {
+    padding: 18px 24px 18px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: middle;
+  }
+  .inv tbody tr { cursor: pointer; }
+  .inv tbody tr.inv-row:hover td { background: rgba(0, 0, 0, 0.018); }
+  .inv tbody tr.inv-row td { border-bottom: none; }
+  .inv tbody tr.inv-exp td { padding: 0; border-bottom: 1px solid var(--rule-soft); }
+  .c-scorewrap { display: flex; align-items: center; gap: 12px; }
+  .c-scorewrap svg { flex: none; }
+  .exp-inner { max-height: 0; overflow: hidden; transition: max-height 220ms ease; }
+  tr.inv-row:hover + tr.inv-exp .exp-inner,
+  tr.inv-exp:hover .exp-inner { max-height: 140px; transition-delay: 200ms; }
+  .exp-pad { padding: 4px 0 18px; }
+  .exp-row { display: flex; align-items: center; gap: 16px; padding: 2px 0; }
+  .exp-lab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    width: 110px;
+    flex: none;
+  }
+  .exp-val { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+  td.c-string {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  td.c-source {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .src-k { color: var(--ink); opacity: 0.55; margin-right: 7px; }
+  td.c-type {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  td.c-score { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-variant-numeric: tabular-nums; }
+  .s-high { color: var(--accent); font-weight: 500; }
+  .s-low { color: var(--red); }
+  td.c-status { font-size: 13px; white-space: nowrap; }
+  .st .dot { font-size: 9px; vertical-align: 1px; margin-right: 7px; }
+  .st-needs-review .dot { color: var(--red); }
+  .st-approved .dot { color: var(--muted); }
+  .st-in-review .dot { color: var(--ink); }
+  td.c-updated { font-size: 13px; color: var(--muted); white-space: nowrap; text-align: right; }
+  .inv-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 16px;
+  }
+
+  /* ---------- string detail ---------- */
+
+  .crumb { font-size: 13px; color: var(--muted); margin-bottom: 36px; }
+  .crumb a {
+    color: var(--muted);
+    cursor: pointer;
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+    transition: color 150ms ease-out;
+  }
+  .crumb a:hover { color: var(--ink); }
+
+  .det-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 24px 32px;
+    flex-wrap: wrap;
+  }
+  .det-key { font-family: 'JetBrains Mono', monospace; font-size: 22px; word-break: break-word; }
+  .det-tools { display: flex; gap: 14px; align-items: baseline; }
+  .det-tools .st { font-size: 13px; white-space: nowrap; }
+
+  .submitted-copy, .rewrite-copy {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    line-height: 1.55;
+    border-left: 2px solid var(--ink);
+    padding-left: 18px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-width: 720px;
+  }
+  .det-string { margin-top: 40px; }
+  .det-meta { margin-top: 20px; font-size: 13.5px; color: var(--muted); }
+
+  .det-sec { margin-top: 80px; max-width: 760px; }
+
+  .det-overall { display: flex; align-items: baseline; gap: 22px; flex-wrap: wrap; }
+  .det-score {
+    font-family: 'Newsreader', serif;
+    font-weight: 300;
+    font-size: 84px;
+    line-height: 1;
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+  .det-grade {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 26px;
+    color: var(--muted);
+  }
+  .det-bigbar { margin-top: 30px; max-width: 480px; }
+  .det-bigbar svg { display: block; width: 100%; height: 32px; }
+  .det-dims { margin-top: 48px; }
+
+  .dim-row {
+    display: grid;
+    grid-template-columns: 190px 78px 1fr;
+    align-items: baseline;
+    gap: 24px;
+    padding: 26px 0;
+    border-bottom: 1px solid var(--rule);
+    max-width: 760px;
+  }
+  .dim-row:first-of-type { border-top: 1px solid var(--rule); }
+  .dim-name {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .dim-desc {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+    opacity: 0.75;
+  }
+  .dim-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 30px;
+    line-height: 1;
+    color: var(--muted);
+  }
+  .dim-row.low .dim-score { color: var(--ink); font-weight: 500; }
+  .dim-max {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .dim-note {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 18px;
+    line-height: 1.4;
+  }
+
+  .rewrite-why {
+    margin-top: 24px;
+    font-size: 14px;
+    font-style: italic;
+    color: var(--muted);
+    max-width: 640px;
+  }
+  .rewrite-actions { display: flex; align-items: baseline; gap: 28px; margin-top: 20px; }
+
+  .ver { padding: 24px 0; border-bottom: 1px solid var(--rule-soft); }
+  .ver-text { font-family: 'JetBrains Mono', monospace; font-size: 14px; line-height: 1.6; max-width: 640px; }
+  .ver-meta { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+  .ver-diff {
+    display: grid;
+    grid-template-columns: 1fr 170px;
+    gap: 28px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .ver-diff .ver-text { line-height: 1.8; }
+  .empty-note { font-size: 14px; color: var(--muted); font-style: italic; }
+
+  .vio {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 24px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .vio-name { font-weight: 500; font-size: 14.5px; }
+  .vio-note { font-size: 13.5px; color: var(--muted); margin-top: 6px; max-width: 520px; }
+  .vio-done { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+
+  .cmt { display: flex; gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--rule-soft); }
+  .cmt-av {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--rule);
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    color: var(--muted);
+  }
+  .cmt-meta { font-size: 12px; color: var(--muted); }
+  .cmt-text { margin-top: 5px; font-size: 14.5px; max-width: 560px; }
+  .cmt-input-row { display: flex; gap: 18px; margin-top: 28px; align-items: baseline; max-width: 640px; }
+  .cmt-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--rule);
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.01em;
+    font-size: 14px;
+    padding: 8px 0;
+    color: var(--ink);
+  }
+  .cmt-input:focus { outline: none; border-bottom-color: rgba(0, 0, 0, 0.45); }
+  .cmt-input::placeholder { color: var(--muted); opacity: 0.65; }
+
+  .assign-wrap { position: relative; display: inline-block; }
+
+  /* ---------- dashboard ---------- */
+
+  .dash-sec { margin-top: 80px; max-width: 760px; }
+  .chart-wrap { max-width: 760px; }
+  .chart-wrap svg { display: block; width: 100%; height: auto; }
+
+  table.area { width: 100%; max-width: 640px; border-collapse: collapse; }
+  .area th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 400;
+    text-align: left;
+    padding: 12px 16px 12px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .area td { padding: 14px 24px 14px 0; border-bottom: 1px solid var(--rule-soft); vertical-align: baseline; }
+  .area th:nth-child(2), .area th:nth-child(3), .area th:nth-child(4),
+  .area td.area-count, .area td.area-avg, .area td.area-trend { text-align: right; }
+  .area th:last-child, .area td.area-trend { padding-right: 0; }
+  .area-name { font-size: 14.5px; }
+  .area-count { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--muted); }
+  .area-avg { font-family: 'JetBrains Mono', monospace; font-size: 16px; }
+  .area-trend { font-size: 14px; }
+  .t-up { color: var(--accent); }
+  .t-flat { color: var(--muted); }
+
+  .dash-agg { margin-top: 40px; max-width: 480px; }
+  .dash-agg svg { display: block; width: 100%; height: 24px; }
+
+  .viz { max-width: 640px; overflow-x: auto; }
+  .viz svg { display: block; }
+  .viz .shot-cap { margin-top: 14px; }
+
+  .regv {
+    display: grid;
+    grid-template-columns: 150px 1fr 150px;
+    gap: 16px 32px;
+    align-items: start;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .regv-bars { display: flex; flex-direction: column; gap: 6px; }
+  .regv-delta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--red);
+    padding: 1px 0;
+  }
+  .regv-copy {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .regv-copy del { display: block; }
+  .regv-copy ins { display: block; }
+
+  .callout {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 25px;
+    line-height: 1.45;
+    max-width: 560px;
+  }
+
+  /* ---------- rules ---------- */
+
+  .rules-sec { margin-top: 80px; max-width: 760px; }
+  .sec-desc { font-size: 14px; color: var(--muted); margin: -12px 0 28px; max-width: 520px; }
+
+  table.term { width: 100%; max-width: 620px; border-collapse: collapse; }
+  .term th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 400;
+    text-align: left;
+    padding: 12px 16px 12px 0;
+    border-bottom: 1px solid var(--rule);
+    width: 50%;
+  }
+  .term td { padding: 14px 24px 14px 0; border-bottom: 1px solid var(--rule-soft); vertical-align: baseline; }
+  .term-pref { font-size: 14.5px; font-weight: 500; }
+  .term-avoid { font-size: 14px; color: var(--muted); }
+  .rules-sec .add-btn { margin: 24px 0 0; }
+
+  .rule-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 20px 32px;
+    flex-wrap: wrap;
+    padding: 26px 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .rule-main { max-width: 500px; }
+  .rule-name { font-weight: 500; font-size: 15px; }
+  .rule-desc { margin-top: 6px; font-size: 14px; color: var(--muted); }
+  .rule-side { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; }
+  .sev-violation { color: var(--red); text-transform: uppercase; }
+  .sev-warning { color: var(--muted); text-transform: uppercase; }
+  .rule-count { display: block; margin-top: 8px; color: var(--muted); letter-spacing: 0; }
+
+  .profile {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 23px;
+    line-height: 1.5;
+    color: var(--muted);
+    max-width: 620px;
+  }
+
+  /* ---------- activity ---------- */
+
+  .tabs { display: flex; gap: 28px; margin-top: 32px; border-bottom: 1px solid var(--rule); flex-wrap: wrap; }
+  .tab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    background: none;
+    border: none;
+    border-bottom: 1px solid transparent;
+    margin-bottom: -1px;
+    padding: 12px 0;
+    cursor: pointer;
+    transition: color 150ms ease-out;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active { color: var(--ink); border-bottom-color: var(--ink); }
+
+  .act { padding: 26px 0; border-bottom: 1px solid var(--rule-soft); max-width: 760px; }
+  .act-title { font-size: 15px; font-weight: 500; }
+  .act-meta { margin-top: 6px; font-size: 13px; color: var(--muted); }
+  .act-sum { margin-top: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .chk-pass { color: var(--accent); }
+  .chk-fail { color: var(--red); }
+  .act-prev { margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+  .act-link {
+    margin-top: 14px;
+    display: inline-block;
+    font-size: 13px;
+    color: var(--accent);
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--accent);
+    padding: 2px 0;
+    cursor: pointer;
+    transition: opacity 150ms ease-out;
+  }
+  .act-link:hover { opacity: 0.7; }
+
+  .pr-box {
+    margin-top: 22px;
+    background: var(--prbg);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 22px 24px;
+    max-width: 680px;
+  }
+  .pr-head {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .pr-table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  .pr-table td {
+    padding: 11px 14px 11px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.09);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    vertical-align: baseline;
+  }
+  .pr-table td.pr-reason { font-family: 'Inter', sans-serif; font-size: 12.5px; color: var(--muted); }
+  .pr-verdict {
+    margin-top: 18px;
+    font-size: 13.5px;
+    display: flex;
+    gap: 8px 14px;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+  .pr-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: none;
+    border: 1px solid var(--ink);
+    border-radius: 2px;
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: background 150ms ease-out, color 150ms ease-out;
+  }
+  .pr-btn.solid { background: var(--ink); color: var(--prbg); }
+  .pr-btn:hover { background: var(--ink); color: var(--prbg); }
+
+  /* ---------- quick analysis ---------- */
+
+  .q-note {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 19px;
+    color: var(--muted);
+    max-width: 520px;
+    margin-bottom: 48px;
+  }
+  .q-zone { margin-top: 48px; max-width: 720px; }
+  .field-label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  textarea#qText {
+    display: block;
+    width: 100%;
+    min-height: 140px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.01em;
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--ink);
+    resize: none;
+    overflow: hidden;
+    padding: 8px 0 16px;
+    margin-bottom: 1px;
+  }
+  textarea#qText:focus {
+    outline: none;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.45);
+    margin-bottom: 0;
+  }
+  textarea#qText::placeholder { color: var(--muted); opacity: 0.65; }
+  .counter-row { display: flex; justify-content: flex-end; margin-top: 10px; min-height: 18px; }
+  #qCount {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    opacity: 0;
+    transition: opacity 200ms ease-out;
+  }
+  #qCount.visible { opacity: 0.8; }
+
+  .meta-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 32px 56px; margin-top: 40px; }
+  .type-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 2px; max-width: 460px; }
+  .type-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    background: none;
+    border: none;
+    padding: 3px 7px;
+    cursor: pointer;
+    transition: color 150ms ease-out;
+  }
+  .type-btn:hover { color: var(--ink); }
+  .type-btn.selected {
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 5px;
+    text-decoration-thickness: 1px;
+  }
+  .type-sep {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--rule);
+    user-select: none;
+  }
+  #qSuggest {
+    display: block;
+    margin-top: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    background: none;
+    border: none;
+    padding: 2px 0;
+    cursor: pointer;
+    text-align: left;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 250ms ease-out, color 150ms ease-out;
+  }
+  #qSuggest.visible { opacity: 1; pointer-events: auto; }
+  #qSuggest:hover { color: var(--ink); }
+  input#qContext {
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.01em;
+    font-size: 14px;
+    color: var(--ink);
+    padding: 10px 12px;
+    width: 280px;
+    max-width: 100%;
+  }
+  input#qContext:focus { outline: none; border-color: rgba(0, 0, 0, 0.5); }
+  input#qContext::placeholder { color: var(--muted); opacity: 0.65; }
+  .field-hint { display: block; margin-top: 10px; font-size: 12px; color: var(--muted); max-width: 300px; }
+
+  .q-actions { margin-top: 52px; }
+  .q-actions-line { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  #qAnalyze {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 0;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 16px 32px;
+    cursor: pointer;
+    transition: background 150ms ease-out, opacity 250ms ease-out;
+  }
+  #qAnalyze:hover { background: #263D2F; }
+  #qAnalyze.idle { opacity: 0.45; }
+  .kbd-hint { font-size: 13px; color: var(--muted); }
+  .analyzing-note {
+    font-size: 16px;
+    font-weight: 500;
+    padding: 16px 0;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  #qStatus { margin-top: 10px; font-size: 14px; color: var(--muted); min-height: 22px; }
+  #qHint {
+    margin-top: 16px;
+    font-size: 14px;
+    color: var(--muted);
+    opacity: 0;
+    transition: opacity 200ms ease-out;
+    min-height: 22px;
+  }
+  #qHint.visible { opacity: 1; }
+  .dimmed { opacity: 0.4; pointer-events: none; }
+
+  .q-results .r-sec { margin: 88px 0; max-width: 760px; }
+  .q-results .r-sec:first-child { margin-top: 56px; }
+  .submitted-meta { margin-top: 22px; font-size: 14px; color: var(--muted); }
+  .overall-line { display: flex; align-items: baseline; gap: 16px; }
+  .overall-score {
+    font-family: 'Newsreader', serif;
+    font-weight: 300;
+    font-size: clamp(80px, 10vw, 120px);
+    line-height: 1;
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+  .overall-max { font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--muted); }
+  .overall-grade {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 28px;
+    color: var(--muted);
+    margin-top: 14px;
+  }
+  .grade-sub { margin-top: 12px; font-size: 15px; color: var(--muted); max-width: 440px; }
+  .back-link {
+    display: inline-block;
+    font-size: 15px;
+    color: var(--ink);
+    background: none;
+    border: none;
+    padding: 4px 0;
+    cursor: pointer;
+    border-bottom: 1px solid var(--ink);
+    transition: color 150ms ease-out, border-color 150ms ease-out;
+  }
+  .back-link:hover { color: var(--muted); border-color: var(--muted); }
+  #qAgain {
+    font-size: 13px;
+    color: var(--accent);
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--accent);
+    padding: 2px 0;
+    cursor: pointer;
+    transition: opacity 150ms ease-out;
+  }
+  #qAgain:hover { opacity: 0.7; }
+
+  /* ---------- responsive: tablet ---------- */
+
+  @media (max-width: 1199px) {
+    .sidebar { width: 56px; flex: 0 0 56px; padding: 24px 0; }
+    .ws-name { padding: 0; text-align: center; }
+    .ws-full { display: none; }
+    .ws-abbr { display: inline; }
+    .nav-label { display: none; }
+    .nav-i { display: block; text-align: center; }
+    .nav-item { padding: 12px 0; }
+    .side-foot { display: none; }
+    main#main { padding: 44px 36px 120px; }
+    .inv th.c-source, .inv td.c-source { display: none; }
+    .inv th.c-string { width: 46%; }
+    .c-scorewrap svg { width: 64px; height: 8px; }
+  }
+
+  /* ---------- responsive: mobile ---------- */
+
+  @media (max-width: 767px) {
+    .lw-top { padding: 20px 24px; }
+    .lw-nav { gap: 16px; }
+    .lw-nav span { font-size: 13px; }
+    .lw-page { padding: 0 24px 88px; }
+    .lw-hero { padding-top: 48px; }
+    .lw-objection, .lw-demo { margin-top: 112px; }
+    .lw-final { margin-top: 96px; }
+    .cmp-row span { font-size: 12.5px; padding: 13px 14px 13px 0; }
+    .cmp-row span:last-child { padding-left: 14px; }
+
+    .menu-btn { display: inline-block; }
+    .sidebar { display: none; }
+    .sidebar.open {
+      display: flex;
+      position: fixed;
+      top: 52px;
+      left: 0;
+      right: 0;
+      width: auto;
+      height: auto;
+      background: var(--bg);
+      border-right: none;
+      border-bottom: 1px solid var(--rule);
+      z-index: 45;
+      padding: 12px 0 20px;
+    }
+    .sidebar.open .nav-label { display: inline; }
+    .sidebar.open .nav-i { display: none; }
+    .sidebar.open .nav-item { padding: 12px 24px; text-align: left; }
+    .sidebar.open .ws-name { display: none; }
+    .sidebar.open .side-foot { display: block; padding-top: 16px; }
+
+    main#main { padding: 36px 20px 100px; }
+    .page-title { font-size: 32px; }
+    .stat { padding: 4px 20px; }
+    .stat-v { font-size: 19px; }
+
+    .inv thead { display: none; }
+    .inv tbody tr { display: block; padding: 18px 0; border-bottom: 1px solid var(--rule-soft); }
+    .inv td { display: none; border: none; padding: 0; }
+    .inv td.c-string {
+      display: block;
+      max-width: none;
+      white-space: normal;
+      font-size: 13.5px;
+      line-height: 1.55;
+    }
+    .inv td.c-score { display: inline-block; margin: 10px 18px 0 0; font-size: 15px; }
+    .inv td.c-status { display: inline-block; margin: 10px 18px 0 0; }
+    .inv td.c-updated { display: inline-block; margin-top: 10px; }
+    .inv tbody tr.inv-exp { display: none; }
+    .inv tbody tr.inv-row { border-bottom: 1px solid var(--rule-soft); }
+
+    .ver-diff { grid-template-columns: 1fr; gap: 10px; }
+    .regv { grid-template-columns: 1fr; gap: 14px; }
+    .demo-str, .demo-rw { font-size: 16px; }
+    .demo-rw { min-height: 120px; }
+    .demo-num { font-size: 48px; }
+    .demo-lab { width: 96px; }
+
+    .dim-row { grid-template-columns: 1fr auto; gap: 10px 24px; }
+    .dim-note { grid-column: 1 / -1; }
+    .det-score { font-size: 64px; }
+    .submitted-copy, .rewrite-copy { font-size: 17px; }
+    .det-sec, .dash-sec, .rules-sec { margin-top: 72px; }
+    .meta-row { flex-direction: column; align-items: stretch; }
+    input#qContext { width: 100%; }
+    .kbd-hint { display: none; }
+    .rule-side { text-align: left; }
+    .callout { font-size: 21px; }
+    .profile { font-size: 20px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      transition-delay: 0ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ landing ============ -->
+<div id="landing">
+  <header class="lw-top">
+    <a class="wordmark" href="#">Linewise</a>
+    <nav class="lw-nav">
+      <span>How it works</span>
+      <span>Pricing</span>
+      <span>Sign in</span>
+    </nav>
+  </header>
+
+  <main class="lw-page">
+    <section class="lw-hero">
+      <p class="kicker reveal">LINEWISE / V0.1</p>
+      <h1 class="headline reveal" style="animation-delay: 70ms">Your product ships hundreds of strings a month. Treat them like a design system.</h1>
+      <p class="sub reveal" style="animation-delay: 140ms">Linewise is the source of truth for every user-facing string in your product. Inventory, review, and enforce standards across your codebase, Figma files, and CI/CD.</p>
+      <a class="cta reveal" href="#inventory" data-enter style="animation-delay: 240ms">Enter the sandbox &rarr;</a>
+    </section>
+
+    <section class="lw-objection">
+      <p class="kicker">THE OBJECTION</p>
+      <h2 class="lw-h2">Yes, you can paste one string into ChatGPT. That&rsquo;s not the problem we solve.</h2>
+      <div class="cmp">
+        <div class="cmp-row cmp-head"><span>An LLM alone</span><span>Linewise</span></div>
+        <div class="cmp-row"><span>Analyzes one string at a time</span><span>Tracks every string in your product</span></div>
+        <div class="cmp-row"><span>No memory of your product</span><span>Versions and history across every deploy</span></div>
+        <div class="cmp-row"><span>Gives different answers each time</span><span>Enforces your team&rsquo;s authored rules</span></div>
+        <div class="cmp-row"><span>No workflow</span><span>Assign, review, resolve, sign-off</span></div>
+        <div class="cmp-row"><span>No CI/CD</span><span>Blocks bad copy from merging via GitHub action</span></div>
+        <div class="cmp-row"><span>No benchmarks</span><span>See how you compare over time</span></div>
+      </div>
+    </section>
+
+    <section class="lw-demo">
+      <div class="demo" id="landingDemo">
+        <div class="demo-str" id="demoStr"></div>
+        <div class="demo-rows" id="demoBars"></div>
+        <div class="demo-overall"><span class="demo-num" id="demoScore">0.0</span><span class="overall-max">/ 5</span></div>
+        <div class="demo-rw"><span id="demoRwText"></span><span class="tcur off" id="demoCur"></span></div>
+      </div>
+    </section>
+
+    <section class="lw-final">
+      <a class="cta" href="#inventory" data-enter>Enter the sandbox &rarr;</a>
+    </section>
+
+    <p class="foot-note">A design prototype. The workspace, the product, and the team inside are fictional. Everything runs in your browser.</p>
+  </main>
+</div>
+
+<!-- ============ workspace ============ -->
+<div id="workspace" class="hidden">
+  <header class="topbar">
+    <div class="top-left">
+      <button class="menu-btn" id="menuBtn" type="button">Menu</button>
+      <button class="ws-pill" type="button">Vellum Finance <span class="chev">&#9662;</span></button>
+    </div>
+    <div class="top-right">
+      <button class="icon-btn" type="button" aria-label="Search">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
+      </button>
+      <button class="icon-btn" type="button" aria-label="Notifications, 3 unread">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3.5 11.5v-4a4.5 4.5 0 0 1 9 0v4l1 2h-11z"/><path d="M6.8 14.7a1.3 1.3 0 0 0 2.4 0"/></svg>
+        <span class="badge">3</span>
+      </button>
+      <span class="avatar">SC</span>
+    </div>
+  </header>
+
+  <div class="shell">
+    <nav class="sidebar" id="sidebar">
+      <div>
+        <p class="ws-name"><span class="ws-full">VELLUM FINANCE</span><span class="ws-abbr">VF</span></p>
+        <a class="nav-item" href="#inventory" data-nav="inventory"><span class="nav-i">I</span><span class="nav-label">Inventory</span></a>
+        <a class="nav-item" href="#dashboard" data-nav="dashboard"><span class="nav-i">D</span><span class="nav-label">Dashboard</span></a>
+        <a class="nav-item" href="#rules" data-nav="rules"><span class="nav-i">R</span><span class="nav-label">Rules</span></a>
+        <a class="nav-item" href="#activity" data-nav="activity"><span class="nav-i">A</span><span class="nav-label">Activity</span></a>
+        <a class="nav-item" href="#quick" data-nav="quick"><span class="nav-i">Q</span><span class="nav-label">Quick analysis</span></a>
+      </div>
+      <div class="side-foot">
+        <span class="side-link">Docs</span>
+        <span class="side-link">Settings</span>
+        <a class="side-word" href="#">Linewise</a>
+      </div>
+    </nav>
+    <main id="main"></main>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   Linewise — copy ops mock
+   All state lives in JS. No storage, no network.
+   ========================================================= */
+
+/* ---------- workspace data ---------- */
+
+var WORKSPACE = {
+  name: "Vellum Finance",
+  minScore: 2.5,
+  tracked: "2,847",
+  avg: "3.8",
+  delta: "0.2",
+  needsReview: 47,
+  regressions: 12
+};
+
+var TEAM = ["Sara Chen", "Dev Patel", "Marcus Okafor", "Lin Zhao"];
+var INITIALS = { "Sara Chen": "SC", "Dev Patel": "DP", "Marcus Okafor": "MO", "Lin Zhao": "LZ" };
+
+var STRINGS = [
+  {
+    id: "errors.payment.declined",
+    text: "Something went wrong. Please try again.",
+    source: "github", ref: "errors.payment.declined",
+    type: "error", score: 2.4, status: "needs review",
+    updated: "2h ago", mins: 120, firstSeen: "3 months ago",
+    dims: { clarity: 2, actionability: 2, trust: 1, tone: 3, accessibility: 4 },
+    notes: {
+      clarity: "The user isn't told what failed or why.",
+      actionability: "\"Try again\" gives no path forward when the same failure could just repeat.",
+      trust: "For a payment flow, the user needs to know whether their money moved. This leaves them guessing."
+    },
+    rewrite: "Your payment didn't go through. Your card wasn't charged. Try a different card, or contact your bank if this keeps happening.",
+    rewriteWhy: "Names the failure, confirms the state of the user's money, and offers a specific next action.",
+    versions: [
+      { text: "We're sorry, an error occurred. Please try again in a few moments.", when: "3 months ago", author: "Lin Zhao", score: "2.6" },
+      { text: "Payment failed. Try again.", when: "6 weeks ago", author: "Lin Zhao", score: "2.2" }
+    ],
+    comments: [
+      { name: "Sara Chen", when: "1h ago", text: "This has been on my list for weeks. The trust score is what kills us here." },
+      { name: "Dev Patel", when: "42m ago", text: "Drafting a rewrite that names the payment specifically. Will submit for review." }
+    ],
+    violations: [
+      { rule: "No vague errors", note: "Never say \"something went wrong.\" Name what failed." },
+      { rule: "No bare \"try again\"", note: "Offer a specific next step after an error." },
+      { rule: "Financial state always stated", note: "A payment error must say whether the card was charged." }
+    ]
+  },
+  {
+    id: "empty.invoices",
+    text: "No invoices yet. Create your first one to start tracking payments.",
+    source: "github", ref: "empty.invoices",
+    type: "empty", score: 4.6, status: "approved",
+    updated: "1d ago", mins: 1440, firstSeen: "5 months ago",
+    dims: { clarity: 5, actionability: 5, trust: 4, tone: 4, accessibility: 5 },
+    notes: {},
+    versions: [
+      { text: "No invoices found.", when: "4 months ago", author: "Lin Zhao", score: "2.9" }
+    ],
+    comments: [], violations: []
+  },
+  {
+    id: "confirm.delete_workspace",
+    text: "Are you sure?",
+    source: "github", ref: "confirm.delete_workspace",
+    type: "confirmation", score: 2.6, status: "needs review",
+    updated: "3h ago", mins: 180, firstSeen: "8 months ago",
+    dims: { clarity: 1, actionability: 3, trust: 1, tone: 3, accessibility: 5 },
+    notes: {
+      clarity: "Sure of what? The user has no idea what they just triggered.",
+      trust: "For a destructive action, the user needs to know exactly what will be deleted and whether it can be undone."
+    },
+    rewrite: "Delete this workspace? All projects, files, and team members will be permanently removed. This can't be undone.",
+    rewriteWhy: "Names the specific action, lists what gets deleted, and states that it's permanent.",
+    versions: [],
+    comments: [
+      { name: "Marcus Okafor", when: "3h ago", text: "We already shipped the good version at confirm.workspace.delete. This older dialog is still live in settings." }
+    ],
+    violations: []
+  },
+  {
+    id: "cards-frozen-state",
+    text: "Your card has been frozen. We noticed unusual activity. Tap to review recent transactions and unfreeze if it was you.",
+    source: "figma", ref: "cards / frozen state",
+    type: "notification", score: 4.8, status: "approved",
+    updated: "5d ago", mins: 7200, firstSeen: "2 months ago",
+    dims: { clarity: 5, actionability: 5, trust: 5, tone: 4, accessibility: 5 },
+    notes: {},
+    versions: [
+      { text: "Card frozen due to suspicious activity.", when: "2 months ago", author: "Sara Chen", score: "3.1" }
+    ],
+    comments: [], violations: []
+  },
+  {
+    id: "errors.auth.invalid",
+    text: "Invalid credentials.",
+    source: "github", ref: "errors.auth.invalid",
+    type: "error", score: 2.0, status: "needs review",
+    updated: "1d ago", mins: 1445, firstSeen: "9 months ago",
+    dims: { clarity: 2, actionability: 1, trust: 2, tone: 3, accessibility: 2 },
+    notes: {
+      clarity: "Invalid how? Wrong email, wrong password, locked account? The user can't tell.",
+      actionability: "No next step at all.",
+      accessibility: "\"Credentials\" is jargon. Many users don't map it to email and password."
+    },
+    rewrite: "We couldn't sign you in. Check your email and password, then try once more.",
+    rewriteWhy: "Names what to check, in plain words instead of jargon.",
+    versions: [],
+    comments: [],
+    violations: [
+      { rule: "Plain language", note: "\"Credentials\" is above a grade 8 reading level for this moment." }
+    ]
+  },
+  {
+    id: "success.transfer.initiated",
+    text: "Your transfer of ₹42,500 to Acme Corp is on its way. It usually arrives within 2 hours.",
+    source: "github", ref: "success.transfer.initiated",
+    type: "notification", score: 4.9, status: "approved",
+    updated: "2d ago", mins: 2880, firstSeen: "4 months ago",
+    dims: { clarity: 5, actionability: 5, trust: 5, tone: 4, accessibility: 5 },
+    notes: {},
+    versions: [], comments: [], violations: []
+  },
+  {
+    id: "errors.session.expired",
+    text: "Session expired. Please log in again.",
+    source: "github", ref: "errors.session.expired",
+    type: "error", score: 3.0, status: "needs review",
+    updated: "4h ago", mins: 240, firstSeen: "1 year ago",
+    dims: { clarity: 3, actionability: 2, trust: 3, tone: 3, accessibility: 4 },
+    notes: {
+      actionability: "Tells the user to sign in again, but not why it happened or whether their work survived."
+    },
+    rewrite: "Your session ended after 30 minutes of inactivity. Sign in again to pick up where you left off. Nothing was lost.",
+    rewriteWhy: "Explains why it happened, confirms nothing was lost, and uses our preferred term.",
+    versions: [],
+    comments: [],
+    violations: [
+      { rule: "Terminology: sign in", note: "The dictionary prefers \"sign in\" over \"log in\"." }
+    ]
+  },
+  {
+    id: "kyc-entry-state",
+    text: "Verify your identity to unlock transfers above ₹1 lakh. This usually takes under 5 minutes.",
+    source: "figma", ref: "kyc / entry state",
+    type: "empty", score: 4.7, status: "approved",
+    updated: "1w ago", mins: 10080, firstSeen: "3 months ago",
+    dims: { clarity: 5, actionability: 5, trust: 5, tone: 4, accessibility: 5 },
+    notes: {},
+    versions: [], comments: [], violations: []
+  },
+  {
+    id: "errors.generic.500",
+    text: "Oops! Something broke.",
+    source: "github", ref: "errors.generic.500",
+    type: "error", score: 1.4, status: "needs review",
+    updated: "6h ago", mins: 360, firstSeen: "1 year ago",
+    dims: { clarity: 1, actionability: 2, trust: 1, tone: 1, accessibility: 2 },
+    notes: {
+      clarity: "\"Something broke\" tells the user nothing about what, or whose fault it was.",
+      actionability: "No next step. The user is stranded.",
+      trust: "In a banking app, this is a shrug where an explanation should be.",
+      tone: "The exclamation mark treats a failure like a party."
+    },
+    rewrite: "Something on our end failed. Your money and data are untouched. Reload the page, and contact us if it happens again.",
+    rewriteWhy: "Owns the failure, states that the user's money is safe, and gives a concrete next step.",
+    versions: [
+      { text: "An unexpected error occurred.", when: "5 months ago", author: "Lin Zhao", score: "1.8" }
+    ],
+    comments: [
+      { name: "Marcus Okafor", when: "5h ago", text: "Our most-seen error, and it says nothing. Prioritizing this sprint." }
+    ],
+    violations: [
+      { rule: "No vague errors", note: "Never say \"oops.\" Name what failed." },
+      { rule: "No exclamation marks in errors", note: "Errors should be direct, not enthusiastic." },
+      { rule: "Financial state always stated", note: "A full-page failure must say the user's money is unaffected." }
+    ]
+  },
+  {
+    id: "confirm.workspace.delete",
+    text: "Delete this workspace? All projects, files, and team members will be permanently removed. This can't be undone.",
+    source: "github", ref: "confirm.workspace.delete",
+    type: "confirmation", score: 4.8, status: "approved",
+    updated: "4d ago", mins: 5760, firstSeen: "3 months ago",
+    dims: { clarity: 5, actionability: 5, trust: 5, tone: 4, accessibility: 5 },
+    notes: {},
+    versions: [
+      { text: "Are you sure you want to delete this workspace?", when: "3 months ago", author: "Marcus Okafor", score: "3.0" }
+    ],
+    comments: [], violations: []
+  },
+  {
+    id: "errors.otp.wrong",
+    text: "OTP incorrect",
+    source: "github", ref: "errors.otp.wrong",
+    type: "error", score: 2.2, status: "needs review",
+    updated: "8h ago", mins: 480, firstSeen: "7 months ago",
+    dims: { clarity: 2, actionability: 2, trust: 2, tone: 3, accessibility: 2 },
+    notes: {
+      clarity: "Doesn't say whether the code expired, was mistyped, or was for a different request.",
+      actionability: "No path to a new code.",
+      accessibility: "\"OTP\" is jargon. Say \"code.\""
+    },
+    rewrite: "That code didn't match. Check the text message we just sent, or request a new code.",
+    rewriteWhy: "Plain words, and a way forward.",
+    versions: [],
+    comments: [],
+    violations: [
+      { rule: "Plain language", note: "\"OTP\" assumes vocabulary many users don't have." }
+    ]
+  },
+  {
+    id: "loading.generic",
+    text: "Loading...",
+    source: "github", ref: "loading.generic",
+    type: "loading", score: 2.8, status: "needs review",
+    updated: "2d ago", mins: 2885, firstSeen: "1 year ago",
+    dims: { clarity: 2, actionability: 2, trust: 3, tone: 3, accessibility: 4 },
+    notes: {
+      clarity: "Loading what? The user can't tell if the app is working or stuck.",
+      actionability: "No sense of how long to wait."
+    },
+    rewrite: "Loading your dashboard. Usually under 5 seconds.",
+    rewriteWhy: "Names what's loading and sets an expectation.",
+    versions: [], comments: [], violations: []
+  },
+  {
+    id: "errors.payment.declined_v2",
+    text: "Your payment to Zapier didn't go through. Your card wasn't charged. Try a different card, or contact your bank if this keeps happening.",
+    source: "github", ref: "errors.payment.declined_v2",
+    type: "error", score: 4.9, status: "approved",
+    updated: "1w ago", mins: 10085, firstSeen: "3 months ago",
+    dims: { clarity: 5, actionability: 5, trust: 5, tone: 4, accessibility: 5 },
+    notes: {},
+    versions: [
+      { text: "Something went wrong. Please try again.", when: "3 months ago", author: "Lin Zhao", score: "2.4" },
+      { text: "Your payment didn't go through. Try again.", when: "5 weeks ago", author: "Dev Patel", score: "3.6" }
+    ],
+    comments: [
+      { name: "Dev Patel", when: "6d ago", text: "Rewrite shipped. Watching support tickets this week to see if payment-failure contacts drop." }
+    ],
+    violations: []
+  },
+  {
+    id: "buttons.continue",
+    text: "Continue",
+    source: "github", ref: "buttons.continue",
+    type: "button", score: 3.4, status: "in review",
+    updated: "12h ago", mins: 720, firstSeen: "1 year ago",
+    dims: { clarity: 3, actionability: 3, trust: 3, tone: 4, accessibility: 4 },
+    notes: {
+      clarity: "Continue to what? The label carries no information about what happens next.",
+      actionability: "A button should name its outcome, not just the motion."
+    },
+    rewrite: "Review transfer",
+    rewriteWhy: "Names the outcome instead of the motion.",
+    versions: [], comments: [], violations: []
+  },
+  {
+    id: "sync-loading",
+    text: "Just a moment while we pull your transaction history from your bank. This can take up to 30 seconds.",
+    source: "figma", ref: "sync / loading",
+    type: "loading", score: 4.6, status: "approved",
+    updated: "3d ago", mins: 4320, firstSeen: "2 months ago",
+    dims: { clarity: 5, actionability: 4, trust: 5, tone: 4, accessibility: 5 },
+    notes: {},
+    versions: [], comments: [], violations: []
+  },
+  {
+    id: "errors.txn.raw",
+    text: "Error: TXN_DECLINE_5023",
+    source: "github", ref: "errors.txn.raw",
+    type: "error", score: 1.2, status: "needs review",
+    updated: "5h ago", mins: 300, firstSeen: "6 months ago",
+    dims: { clarity: 1, actionability: 1, trust: 1, tone: 1, accessibility: 2 },
+    notes: {
+      clarity: "A raw code. The user learns nothing.",
+      actionability: "Nothing to do but stare at it.",
+      trust: "Shipping internals to the user reads as carelessness with their money.",
+      tone: "Reads like a machine talking to another machine."
+    },
+    rewrite: "Your bank declined this payment. You weren't charged. Try another card, or quote code 5023 if you contact support.",
+    rewriteWhy: "Translates the code, states that the money is safe, and keeps the code where it's useful.",
+    versions: [
+      { text: "Transaction failed: TXN_DECLINE_5023", when: "2 months ago", author: "Lin Zhao", score: "1.6" }
+    ],
+    comments: [
+      { name: "Sara Chen", when: "4h ago", text: "A raw decline code in production. How did this get through?" },
+      { name: "Lin Zhao", when: "3h ago", text: "Legacy fallback path. Fix is in PR #487." }
+    ],
+    violations: [
+      { rule: "Plain language", note: "An internal code is not language." },
+      { rule: "Financial state always stated", note: "A declined transaction must say whether money moved." }
+    ]
+  },
+  {
+    id: "buttons.pay_bills",
+    text: "Pay bills",
+    source: "github", ref: "buttons.pay_bills",
+    type: "button", score: 4.2, status: "approved",
+    updated: "2w ago", mins: 20160, firstSeen: "8 months ago",
+    dims: { clarity: 4, actionability: 5, trust: 4, tone: 4, accessibility: 4 },
+    notes: {},
+    versions: [], comments: [], violations: []
+  },
+  {
+    id: "transfers-scheduled-empty",
+    text: "No scheduled transfers. Schedule one to send money on a specific date, like rent or a recurring payment.",
+    source: "figma", ref: "transfers / scheduled empty",
+    type: "empty", score: 4.7, status: "approved",
+    updated: "6d ago", mins: 8640, firstSeen: "4 months ago",
+    dims: { clarity: 5, actionability: 5, trust: 5, tone: 4, accessibility: 5 },
+    notes: {},
+    versions: [], comments: [], violations: []
+  },
+  {
+    id: "errors.form.invalid",
+    text: "Please enter valid input.",
+    source: "github", ref: "errors.form.invalid",
+    type: "error", score: 1.8, status: "needs review",
+    updated: "1d ago", mins: 1450, firstSeen: "1 year ago",
+    dims: { clarity: 2, actionability: 1, trust: 2, tone: 2, accessibility: 2 },
+    notes: {
+      clarity: "Which field? Invalid how?",
+      actionability: "\"Valid input\" gives the user nothing to correct.",
+      tone: "\"Please\" doesn't soften a message that blames the user.",
+      accessibility: "\"Valid input\" is developer vocabulary."
+    },
+    rewrite: "We couldn't read that. Check the format hint under the highlighted field.",
+    rewriteWhy: "Points at the specific problem instead of scolding.",
+    versions: [],
+    comments: [],
+    violations: [
+      { rule: "No vague errors", note: "\"Valid input\" names nothing. Say which field, and what format." }
+    ]
+  },
+  {
+    id: "confirm.transfer.cancel",
+    text: "Are you sure you want to cancel this transfer?",
+    source: "github", ref: "confirm.transfer.cancel",
+    type: "confirmation", score: 3.2, status: "needs review",
+    updated: "2d ago", mins: 2890, firstSeen: "6 months ago",
+    dims: { clarity: 3, actionability: 3, trust: 2, tone: 4, accessibility: 4 },
+    notes: {
+      clarity: "Names the action, but not its consequences.",
+      trust: "Doesn't say what happens to the money if they cancel."
+    },
+    rewrite: "Cancel this transfer? The money stays in your account, and you can schedule it again anytime.",
+    rewriteWhy: "Answers the question the user is actually asking: what happens to my money.",
+    versions: [],
+    comments: [],
+    violations: [
+      { rule: "Financial state always stated", note: "A transfer confirmation should say where the money ends up." }
+    ]
+  },
+  {
+    id: "kyc-under-review",
+    text: "Your account is under review. We typically finish within one business day. We'll email you when it's done.",
+    source: "figma", ref: "kyc / under review",
+    type: "notification", score: 4.8, status: "approved",
+    updated: "1w ago", mins: 10090, firstSeen: "3 months ago",
+    dims: { clarity: 5, actionability: 5, trust: 5, tone: 4, accessibility: 5 },
+    notes: {},
+    versions: [], comments: [], violations: []
+  },
+  {
+    id: "errors.payment.duplicate",
+    text: "Duplicate transaction detected. We didn't process this payment. Check your recent activity to see the original.",
+    source: "github", ref: "errors.payment.duplicate",
+    type: "error", score: 4.5, status: "approved",
+    updated: "3d ago", mins: 4325, firstSeen: "2 months ago",
+    dims: { clarity: 5, actionability: 4, trust: 5, tone: 4, accessibility: 5 },
+    notes: {},
+    versions: [], comments: [], violations: []
+  },
+  {
+    id: "errors.generic.something",
+    text: "Something isn't right.",
+    source: "github", ref: "errors.generic.something",
+    type: "error", score: 1.6, status: "needs review",
+    updated: "4h ago", mins: 245, firstSeen: "10 months ago",
+    dims: { clarity: 1, actionability: 2, trust: 1, tone: 2, accessibility: 2 },
+    notes: {
+      clarity: "\"Isn't right\" is a feeling, not information.",
+      actionability: "No next step.",
+      trust: "Vagueness about money reads as evasion."
+    },
+    rewrite: "We couldn't load your transactions. Your money is untouched. Refresh in a moment.",
+    rewriteWhy: "Names the failure and separates it from the user's balance.",
+    versions: [],
+    comments: [],
+    violations: [
+      { rule: "No vague errors", note: "Name what isn't right." }
+    ]
+  },
+  {
+    id: "buttons.login",
+    text: "Log in",
+    source: "github", ref: "buttons.login",
+    type: "button", score: 3.0, status: "needs review",
+    updated: "5d ago", mins: 7205, firstSeen: "1 year ago",
+    dims: { clarity: 3, actionability: 3, trust: 3, tone: 3, accessibility: 3 },
+    notes: {
+      clarity: "Fine as a label, but it uses the term we've moved away from."
+    },
+    rewrite: "Sign in",
+    rewriteWhy: "Matches the terminology dictionary. One product, one word for it.",
+    versions: [
+      { text: "Login", when: "6 months ago", author: "Lin Zhao", score: "2.8" }
+    ],
+    comments: [
+      { name: "Dev Patel", when: "5d ago", text: "Terminology check flags this everywhere it appears. We say sign in in 214 other places." }
+    ],
+    violations: [
+      { rule: "Terminology: sign in", note: "The dictionary prefers \"sign in\" over \"log in\"." }
+    ]
+  },
+  {
+    id: "transfers-limit-hit",
+    text: "You've reached your daily transfer limit of ₹5 lakh. The limit resets at midnight.",
+    source: "figma", ref: "transfers / limit hit",
+    type: "error", score: 4.4, status: "approved",
+    updated: "1w ago", mins: 10095, firstSeen: "5 months ago",
+    dims: { clarity: 5, actionability: 4, trust: 4, tone: 4, accessibility: 5 },
+    notes: {},
+    versions: [], comments: [], violations: []
+  },
+  {
+    id: "labels.status.pending",
+    text: "Pending",
+    source: "github", ref: "labels.status.pending",
+    type: "button", score: 3.6, status: "approved",
+    updated: "2w ago", mins: 20165, firstSeen: "1 year ago",
+    dims: { clarity: 4, actionability: 3, trust: 3, tone: 4, accessibility: 4 },
+    notes: {
+      actionability: "Pending says a state exists. It doesn't say the state is moving."
+    },
+    rewrite: "Processing · usually clears within 2 hours",
+    rewriteWhy: "Movement and a timeframe, instead of limbo.",
+    versions: [], comments: [], violations: []
+  },
+  {
+    id: "labels.form.pan",
+    text: "Enter your PAN",
+    source: "github", ref: "labels.form.pan",
+    type: "form label", score: 3.2, status: "needs review",
+    updated: "6h ago", mins: 365, firstSeen: "7 months ago",
+    dims: { clarity: 3, actionability: 3, trust: 3, tone: 3, accessibility: 4 },
+    notes: {
+      clarity: "Assumes the user knows what a PAN looks like."
+    },
+    rewrite: "PAN (10 characters, like ABCDE1234F)",
+    rewriteWhy: "Shows the format before the user can get it wrong.",
+    versions: [], comments: [], violations: []
+  },
+  {
+    id: "onboarding-promo",
+    text: "Your first transfer is on us. No fees for transfers under ₹10,000 for your first 30 days.",
+    source: "figma", ref: "onboarding / promo",
+    type: "empty", score: 4.4, status: "approved",
+    updated: "3w ago", mins: 30240, firstSeen: "6 months ago",
+    dims: { clarity: 4, actionability: 4, trust: 4, tone: 5, accessibility: 5 },
+    notes: {},
+    versions: [], comments: [], violations: []
+  },
+  {
+    id: "loading.upload",
+    text: "Uploading...",
+    source: "github", ref: "loading.upload",
+    type: "loading", score: 2.6, status: "needs review",
+    updated: "1d ago", mins: 1455, firstSeen: "8 months ago",
+    dims: { clarity: 2, actionability: 2, trust: 3, tone: 3, accessibility: 3 },
+    notes: {
+      clarity: "Uploading what, and to where?",
+      actionability: "No expectation set. Can the user leave this screen?"
+    },
+    rewrite: "Uploading your document. Usually under 10 seconds. Keep this tab open.",
+    rewriteWhy: "Sets a timeframe and tells the user what not to do.",
+    versions: [], comments: [], violations: []
+  },
+  {
+    id: "notifications.signed_out_all",
+    text: "Signed out of all devices. You'll need to sign in again on your phone.",
+    source: "github", ref: "notifications.signed_out_all",
+    type: "notification", score: 4.6, status: "approved",
+    updated: "5d ago", mins: 7210, firstSeen: "4 months ago",
+    dims: { clarity: 5, actionability: 4, trust: 5, tone: 4, accessibility: 5 },
+    notes: {},
+    versions: [], comments: [], violations: []
+  }
+];
+
+/* ---------- rules data ---------- */
+
+var TERMINOLOGY = [
+  ["Sign in", "Log in, login"],
+  ["Sign out", "Log out, logout"],
+  ["Your account", "The user's account"],
+  ["Card", "Credit card, debit card (when generic)"],
+  ["₹", "Rs., INR (in UI copy)"],
+  ["Didn't", "Did not"]
+];
+
+var RULES = [
+  { name: "No vague errors", desc: "Never say \"something went wrong\" or \"oops.\" Always name what failed.", severity: "violation", count: 18 },
+  { name: "No bare \"try again\"", desc: "After an error, offer a specific next step. Don't just say \"try again.\"", severity: "warning", count: 34 },
+  { name: "Financial state always stated", desc: "For money errors, always tell the user the state of their funds.", severity: "violation", count: 7 },
+  { name: "No exclamation marks in errors", desc: "Errors should be direct, not enthusiastic.", severity: "warning", count: 12 },
+  { name: "Plain language", desc: "Grade 8 reading level or below. No jargon.", severity: "warning", count: 41 },
+  { name: "No hollow apologies", desc: "\"We're sorry\" only when paired with an explanation.", severity: "warning", count: 9 }
+];
+
+var VOICE_PROFILE = "We sound like a small team of people who care about your money. Plain, direct, sometimes warm. We never hide behind formality when something's gone wrong. We tell you what happened, what we did, and what you should do next. We don't apologize for things that aren't our fault, and we don't dodge when they are.";
+
+/* ---------- dashboard data ---------- */
+
+var TREND_DATA = [3.3, 3.4, 3.4, 3.5, 3.6, 3.6, 3.7, 3.8];
+
+var AREAS = [
+  { name: "Onboarding", count: 412, avg: "4.2", trend: "up" },
+  { name: "Payments", count: 687, avg: "3.4", trend: "up" },
+  { name: "Transfers", count: 523, avg: "3.9", trend: "up" },
+  { name: "Cards", count: 341, avg: "4.1", trend: "flat" },
+  { name: "KYC", count: 289, avg: "3.6", trend: "up" },
+  { name: "Settings", count: 401, avg: "3.7", trend: "flat" },
+  { name: "Notifications", count: 194, avg: "4.3", trend: "up" }
+];
+
+var REGRESSIONS = [
+  { text: "Session expired. Please log in again.", from: "3.8", to: "3.0", when: "4h ago", by: "Lin Zhao" },
+  { text: "Continue", from: "4.0", to: "3.4", when: "12h ago", by: "Lin Zhao" },
+  { text: "Uploading...", from: "3.4", to: "2.6", when: "1d ago", by: "Lin Zhao" },
+  { text: "Are you sure you want to cancel this transfer?", from: "4.0", to: "3.2", when: "2d ago", by: "Marcus Okafor" }
+];
+
+/* ---------- activity data ---------- */
+
+var ACTIVITY = [
+  {
+    kind: "pr",
+    title: "Pull request #487 — Improve payment error messaging",
+    meta: "By Lin Zhao · 2h ago · GitHub",
+    sum: "4 strings changed · 2 flagged · Linewise check: ",
+    check: "failed",
+    prev: "errors.payment.declined_v2 scored 4.9 ✓ · errors.payment.raw scored 1.4 ✗",
+    expandable: true
+  },
+  {
+    kind: "deploy",
+    title: "Deploy to production — v2.14.3",
+    meta: "4h ago · Vercel",
+    sum: "12 new strings · avg score 4.1 · no regressions"
+  },
+  {
+    kind: "pr",
+    title: "Pull request #486 — KYC flow copy audit",
+    meta: "By Dev Patel · 8h ago · GitHub",
+    sum: "18 strings changed · 0 flagged · Linewise check: ",
+    check: "passed",
+    prev: "Avg score improved from 3.4 to 4.2"
+  },
+  {
+    kind: "manual",
+    title: "Manual edit — Sara Chen",
+    meta: "1d ago",
+    sum: "Updated 3 strings in errors.session.*"
+  },
+  {
+    kind: "pr",
+    title: "Pull request #482 — New card freeze notification",
+    meta: "By Lin Zhao · 2d ago · GitHub",
+    sum: "1 string added · 0 flagged · Linewise check: ",
+    check: "passed",
+    prev: "notifications.card_frozen scored 4.8"
+  },
+  {
+    kind: "deploy",
+    title: "Deploy to production — v2.14.2",
+    meta: "3d ago · Vercel",
+    sum: "47 new strings · avg score 3.7 · 2 regressions caught before deploy"
+  }
+];
+
+var PR_CHECK = [
+  { key: "errors.payment.declined_v2", score: "4.9", verdict: "pass", reason: "" },
+  { key: "errors.payment.duplicate", score: "4.5", verdict: "pass", reason: "" },
+  { key: "errors.payment.timeout", score: "2.9", verdict: "flag", reason: "Bare \"try again\" with no specific next step" },
+  { key: "errors.payment.raw", score: "1.4", verdict: "fail", reason: "Raw error code shown to the user. Below the workspace minimum of 2.5." }
+];
+
+/* ---------- synthesized dashboard detail (new constants, existing arrays untouched) ---------- */
+
+var AREA_DIMS = {
+  "Onboarding":    [4.4, 4.1, 4.0, 4.5, 4.0],
+  "Payments":      [3.2, 3.1, 2.9, 3.8, 4.0],
+  "Transfers":     [4.1, 3.8, 3.9, 4.0, 3.7],
+  "Cards":         [4.2, 4.0, 4.3, 3.9, 4.1],
+  "KYC":           [3.6, 3.4, 3.7, 3.5, 3.8],
+  "Settings":      [3.8, 3.5, 3.6, 3.7, 3.9],
+  "Notifications": [4.4, 4.2, 4.5, 4.1, 4.3]
+};
+
+var REG_OLD = [
+  {
+    oldText: "Your session ended after 30 minutes of inactivity. Sign in again to pick up where you left off.",
+    oldDims: [4, 4, 4, 4, 3],
+    newDims: [3, 2, 3, 3, 4]
+  },
+  {
+    oldText: "Review transfer",
+    oldDims: [4, 4, 4, 4, 4],
+    newDims: [3, 3, 3, 4, 4]
+  },
+  {
+    oldText: "Uploading your document. Usually under 10 seconds.",
+    oldDims: [3, 3, 4, 3, 4],
+    newDims: [2, 2, 3, 3, 3]
+  },
+  {
+    oldText: "Cancel this transfer? The money stays in your account.",
+    oldDims: [4, 4, 4, 4, 4],
+    newDims: [3, 3, 2, 4, 4]
+  }
+];
+
+/* =========================================================
+   analysis engine — preserved from the single-string mock
+   ========================================================= */
+
+var COPY_TYPES = ['error', 'empty state', 'confirmation', 'button', 'notification', 'loading', 'tooltip', 'form label'];
+var DIMENSIONS = ['clarity', 'actionability', 'trust', 'tone', 'accessibility'];
+
+var DIMENSION_DESCRIPTIONS = {
+  clarity: 'Does the user know what happened?',
+  actionability: 'Does the user know what to do next?',
+  trust: 'Does the copy respect what is at stake?',
+  tone: 'Does the voice fit the moment?',
+  accessibility: 'Can everyone parse it quickly?'
+};
+
+var GRADE_SUBLINES = {
+  'Excellent': 'Ship it. This copy carries its moment.',
+  'Good': 'Solid. Small refinements would sharpen it.',
+  'Needs work': 'The copy leaves the user guessing in a moment that matters.',
+  'Poor': 'This copy is costing you trust right now.',
+  'Rewrite required': 'Start over. The current copy does more harm than silence.'
+};
+
+var EXPLANATION_TEXT = {
+  clarity: {
+    vague: "The copy doesn't tell the user what actually happened.",
+    short: 'Too brief to give the user meaningful information.'
+  },
+  actionability: {
+    tryagain: '"Try again" doesn\'t help when the failure could just repeat.',
+    noverb: 'Nothing tells the user what to do next.'
+  },
+  trust: {
+    apology: 'An apology without an explanation reads as evasion, not care.',
+    financial: 'For money-related copy, the user needs to know the state of their funds.'
+  },
+  tone: {
+    exclaim: 'Exclamation marks in error copy amplify anxiety without adding information.',
+    terse: 'Empty states are moments to guide the user, not just state a fact.'
+  },
+  accessibility: {
+    jargon: 'Contains internal or technical vocabulary that will exclude many users.',
+    longword: 'At least one word is unnecessarily complex for its meaning.'
+  }
+};
+
+function clamp(n) { return Math.max(1, Math.min(5, n)); }
+
+function wordCount(text) {
+  var words = text.trim().split(/\s+/).filter(Boolean);
+  return words.length;
+}
+
+function hasSpecificNoun(text) {
+  return /\b(payments?|cards?|files?|accounts?|subscriptions?|messages?|connections?)\b/i.test(text);
+}
+
+function gradeLabel(score) {
+  if (score >= 4.5) return 'Excellent';
+  if (score >= 3.5) return 'Good';
+  if (score >= 2.5) return 'Needs work';
+  if (score >= 1.5) return 'Poor';
+  return 'Rewrite required';
+}
+
+function scoreClarity(text, type) {
+  var score = 3;
+  var reason = null;
+  var vague = /(something went wrong|an error has occurred|error occurred|\boops\b|\bwhoops\b)/i.test(text) ||
+    /\binvalid\b(?!\s+(email|password|card|address|phone|username|code|date|format|number|name))/i.test(text);
+  if (hasSpecificNoun(text)) score += 1;
+  if (vague) { score -= 1; reason = 'vague'; }
+  if (wordCount(text) < 4 && (type === 'error' || type === 'empty state' || type === 'confirmation')) {
+    score -= 1;
+    if (!reason) reason = 'short';
+  }
+  return { score: clamp(score), reason: reason };
+}
+
+function scoreActionability(text) {
+  var score = 3;
+  var reason = null;
+  var bareTryAgain = /try again/i.test(text) &&
+    !/try again (with|in|using|after|once)/i.test(text) &&
+    !/\bdifferent\b/i.test(text);
+  if (bareTryAgain) { score -= 1; reason = 'tryagain'; }
+  var hasVerb = /\b(try|check|contact|add|create|review|use|retry|enter|choose|select|update|upload|reload|refresh|sign|log|delete|remove|confirm|cancel|keep|save|send|start|browse|invite)\b/i.test(text) ||
+    /no action needed/i.test(text);
+  if (!hasVerb) { score -= 1; if (!reason) reason = 'noverb'; }
+  var specificStep = /\b(contact|use|check|add)\b/i.test(text) || /retry with/i.test(text);
+  if (specificStep) score += 1;
+  return { score: clamp(score), reason: reason };
+}
+
+function scoreTrust(text, type, context) {
+  var score = 3;
+  var reason = null;
+  var hollowApology = /\b(sorry|we apologize|unfortunately)\b/i.test(text) && !hasSpecificNoun(text);
+  if (hollowApology) { score -= 1; reason = 'apology'; }
+  var financialContext = /(payment|money|transfer|charge|refund|bank)/i.test(context || '');
+  var financialGap = type === 'error' && wordCount(text) < 10 && financialContext;
+  if (financialGap) { score -= 2; reason = 'financial'; }
+  var statesDataState = /(not charged|wasn't charged|was not charged|still saved|data is safe|nothing was lost|files are safe|nothing changed)/i.test(text);
+  if (statesDataState) score += 1;
+  return { score: clamp(score), reason: reason };
+}
+
+function scoreTone(text, type) {
+  var score = 4;
+  var reason = null;
+  if (type === 'error' && /!/.test(text)) { score -= 1; reason = 'exclaim'; }
+  if (type === 'empty state' && wordCount(text) < 5) { score -= 1; if (!reason) reason = 'terse'; }
+  return { score: clamp(score), reason: reason };
+}
+
+var COMMON_LONG_WORDS = [
+  'notifications', 'automatically', 'confirmation', 'subscription', 'subscriptions',
+  'successfully', 'information', 'unfortunately', 'organization', 'recommendations',
+  'congratulations', 'administrator', 'international'
+];
+
+function scoreAccessibility(text) {
+  var score = 4;
+  var reason = null;
+  if (/(authentication|credentials|parameter|validate|verification failed|terminated|denied)/i.test(text)) {
+    score -= 1;
+    reason = 'jargon';
+  }
+  var words = text.split(/\s+/).map(function (w) { return w.replace(/[^a-zA-Z]/g, ''); });
+  var hasLongWord = words.some(function (w) {
+    return w.length > 14 && COMMON_LONG_WORDS.indexOf(w.toLowerCase()) === -1;
+  });
+  if (hasLongWord) { score -= 1; if (!reason) reason = 'longword'; }
+  var sentences = text.split(/[.!?]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+  var allShort = sentences.length > 0 && sentences.every(function (s) {
+    return s.split(/\s+/).filter(Boolean).length < 15;
+  });
+  if (allShort) score += 1;
+  return { score: clamp(score), reason: reason };
+}
+
+function generateRewrite(text, type, context) {
+  var all = (text + ' ' + (context || '')).toLowerCase();
+
+  if (type === 'error') {
+    if (/(payment|charge|card|checkout|billing)/.test(all)) {
+      return "Your payment didn't go through. Your card wasn't charged. Try a different card, or contact your bank if this keeps happening.";
+    }
+    if (/(upload|file)/.test(all)) {
+      return "We couldn't upload your file. It's still safe on your device. Check the file size, then try once more.";
+    }
+    if (/(save|saving)/.test(all)) {
+      return "We couldn't save your changes. Your last saved version is untouched. Copy your work, reload the page, then save again.";
+    }
+    if (/(log ?in|sign ?in|password|session)/.test(all)) {
+      return "We couldn't sign you in. Your account is unchanged. Check your email and password, then try once more.";
+    }
+    if (/(connect|network|offline|server)/.test(all)) {
+      return "We couldn't reach the server. Nothing was lost. Check your connection and try again in a moment.";
+    }
+    return "We couldn't [name the action that failed]. [State of the user's data]. [One specific next step].";
+  }
+
+  if (type === 'empty state') {
+    var noun = null;
+    var nounMatch = all.match(/\b(invoices?|projects?|files?|messages?|contacts?|tasks?|reports?|documents?)\b/);
+    if (nounMatch) noun = nounMatch[1].replace(/s$/, '') + 's';
+    if (noun) {
+      return 'No ' + noun + ' yet. Create your first one to see it tracked here. [What happens after].';
+    }
+    return '[State the emptiness, plainly]. [The first thing to do]. [What happens once they do].';
+  }
+
+  if (type === 'confirmation') {
+    if (/(delete|remove|erase)/.test(all)) {
+      return "Delete [the specific thing]? [What will be removed with it]. This can't be undone.";
+    }
+    return '[The specific action about to happen]? [Its consequences]. [Whether it can be undone].';
+  }
+
+  if (type === 'button') {
+    return '[Specific verb] [specific object]';
+  }
+
+  if (type === 'notification') {
+    return '[What happened, plainly]. [Any action needed, or "no action needed"].';
+  }
+
+  if (type === 'loading') {
+    return "Loading [what, specifically]. [Expected wait, if known].";
+  }
+
+  if (type === 'tooltip') {
+    return '[What this element does or means, in one sentence].';
+  }
+
+  if (type === 'form label') {
+    return '[What to enter, with the format if not obvious].';
+  }
+
+  return '[A clearer version that names what happened and what to do next].';
+}
+
+function rewriteExplanation(reasons) {
+  if (reasons.trust === 'financial') {
+    return "Names the specific failure and confirms the state of the user's money.";
+  }
+  if (reasons.actionability) {
+    return 'Gives the user a clear path forward instead of a dead end.';
+  }
+  return 'Treats the user as capable and tells them what actually happened.';
+}
+
+function analyzeCustom(text, type, context) {
+  var clarity = scoreClarity(text, type);
+  var actionability = scoreActionability(text);
+  var trust = scoreTrust(text, type, context);
+  var tone = scoreTone(text, type);
+  var accessibility = scoreAccessibility(text);
+
+  var results = {
+    clarity: clarity, actionability: actionability, trust: trust,
+    tone: tone, accessibility: accessibility
+  };
+
+  var scores = {};
+  var explanations = {};
+  var reasons = {};
+  var sum = 0;
+  var anyLow = false;
+
+  DIMENSIONS.forEach(function (dim) {
+    var r = results[dim];
+    scores[dim] = r.score;
+    sum += r.score;
+    if (r.score <= 3) {
+      anyLow = true;
+      if (r.reason && EXPLANATION_TEXT[dim][r.reason]) {
+        explanations[dim] = EXPLANATION_TEXT[dim][r.reason];
+        reasons[dim] = r.reason;
+      }
+    }
+  });
+
+  var overall = sum / DIMENSIONS.length;
+  var overallStr = overall.toFixed(1);
+
+  return {
+    scores: scores,
+    overall: overallStr,
+    grade: gradeLabel(parseFloat(overallStr)),
+    explanations: explanations,
+    rewrite: anyLow ? generateRewrite(text, type, context) : null,
+    rewriteWhy: anyLow ? rewriteExplanation(reasons) : null
+  };
+}
+
+function analyze(text, type, context) {
+  return analyzeCustom(text.trim(), type, (context || '').trim());
+}
+
+function detectType(text) {
+  var t = text.toLowerCase().trim();
+  if (!t) return null;
+  if (/\?$/.test(t) && /(sure|delete|remove|confirm|discard|leave|cancel|proceed)/.test(t)) return 'confirmation';
+  if (/(went wrong|error|failed|couldn|can['’]t|unable|invalid|oops|whoops|declined)/.test(t)) return 'error';
+  if (/(^no .+ yet)|(nothing here)|(no results)|(get started by)/.test(t)) return 'empty state';
+  if (/(loading|please wait|hang tight|one moment)/.test(t)) return 'loading';
+  if (wordCount(t) <= 3 && !/[.!?]/.test(t)) return 'button';
+  return null;
+}
+
+/* =========================================================
+   app state + routing
+   ========================================================= */
+
+var state = {
+  inv: { q: '', source: 'all', type: 'all', status: 'all', score: 'any' },
+  openMenu: null,
+  activityTab: 'all',
+  prOpen: false,
+  prResolved: null,
+  assignments: {},
+  overrides: {},
+  quick: { phase: 'input', text: '', context: '', type: 'error', result: null }
+};
+
+var elLanding = document.getElementById('landing');
+var elWorkspace = document.getElementById('workspace');
+var elMain = document.getElementById('main');
+var elSidebar = document.getElementById('sidebar');
+
+var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var lastRoute = null;
+var quickTimers = [];
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/* smart punctuation for typeset commentary. mono blocks stay verbatim:
+   they represent literal strings as they live in code. */
+function typo(str) {
+  return String(str)
+    .replace(/(\w)'(\w)/g, '$1’$2')
+    .replace(/"([^"]*)"/g, '“$1”')
+    .replace(/\.\.\./g, '…');
+}
+
+function escT(str) {
+  return esc(typo(str));
+}
+
+function capFirst(str) {
+  str = String(str);
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+var SOURCE_NAME = { github: 'GitHub', figma: 'Figma' };
+
+var STATUS_GLYPH = { 'needs review': '●', 'approved': '○', 'in review': '◐' };
+
+function statusHtml(st) {
+  return '<span class="st st-' + st.replace(/ /g, '-') + '"><span class="dot">' + STATUS_GLYPH[st] + '</span>' + capFirst(st) + '</span>';
+}
+
+function scoreCls(n) {
+  if (n >= 4.5) return 's-high';
+  if (n <= 2.4) return 's-low';
+  return '';
+}
+
+function findString(id) {
+  for (var i = 0; i < STRINGS.length; i++) {
+    if (STRINGS[i].id === id) return STRINGS[i];
+  }
+  return null;
+}
+
+/* ---------- score bar (printer's rule) ---------- */
+
+var activeRafs = [];
+function cancelRafs() {
+  activeRafs.forEach(function (id) { cancelAnimationFrame(id); });
+  activeRafs = [];
+}
+
+function scoreBarSvg(dims, w, h, opts) {
+  opts = opts || {};
+  var vals = Array.isArray(dims) ? dims : DIMENSIONS.map(function (d) { return dims[d]; });
+  var sep = 1;
+  var segW = (w - sep * (vals.length - 1)) / vals.length;
+  var svg = '<svg class="sbar" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" shape-rendering="crispEdges" role="img" aria-label="' + vals.join(', ') + ' of 5">';
+  vals.forEach(function (v, i) {
+    var x = (i * (segW + sep)).toFixed(1);
+    var fh = Math.max(1, Math.round(h * v / 5));
+    var fill = v === 5 ? '#2F4A3A' : '#1A1A1A';
+    svg += '<rect x="' + x + '" y="0" width="' + segW.toFixed(1) + '" height="' + h + '" fill="rgba(0,0,0,0.08)"/>';
+    svg += '<rect class="sbar-fill" x="' + x + '" y="' + (opts.empty ? h : h - fh) + '" width="' + segW.toFixed(1) + '" height="' + (opts.empty ? 0 : fh) + '" data-h="' + fh + '" data-full="' + h + '" fill="' + fill + '"/>';
+  });
+  return svg + '</svg>';
+}
+
+function scoreCellSvg(v, w, h, empty) {
+  var fh = Math.max(1, Math.round(h * v / 5));
+  var fill = v === 5 ? '#2F4A3A' : '#1A1A1A';
+  return '<svg class="sbar" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" shape-rendering="crispEdges" role="img" aria-label="' + v + ' of 5">' +
+    '<rect x="0" y="0" width="' + w + '" height="' + h + '" fill="rgba(0,0,0,0.08)"/>' +
+    '<rect class="sbar-fill" x="0" y="' + (empty ? h : h - fh) + '" width="' + w + '" height="' + (empty ? 0 : fh) + '" data-h="' + fh + '" data-full="' + h + '" fill="' + fill + '"/></svg>';
+}
+
+function animateBars(rootEl, done) {
+  if (!rootEl) { if (done) done(); return; }
+  var fills = rootEl.querySelectorAll('.sbar-fill');
+  if (reducedMotion || !fills.length) {
+    fills.forEach(function (f) {
+      var fh = parseFloat(f.getAttribute('data-h'));
+      var full = parseFloat(f.getAttribute('data-full'));
+      f.setAttribute('height', fh);
+      f.setAttribute('y', full - fh);
+    });
+    if (done) done();
+    return;
+  }
+  var stagger = 220, dur = 350;
+  var start = null;
+  function frame(ts) {
+    if (start === null) start = ts;
+    var el = ts - start, allDone = true;
+    for (var i = 0; i < fills.length; i++) {
+      var t = (el - i * stagger) / dur;
+      if (t < 1) allDone = false;
+      t = Math.max(0, Math.min(1, t));
+      var e = 1 - Math.pow(1 - t, 3);
+      var fh = parseFloat(fills[i].getAttribute('data-h'));
+      var full = parseFloat(fills[i].getAttribute('data-full'));
+      fills[i].setAttribute('height', (fh * e).toFixed(2));
+      fills[i].setAttribute('y', (full - fh * e).toFixed(2));
+    }
+    if (!allDone) activeRafs.push(requestAnimationFrame(frame));
+    else if (done) done();
+  }
+  activeRafs.push(requestAnimationFrame(frame));
+}
+
+function typewriter(el, text, done) {
+  if (!el) { if (done) done(); return; }
+  if (reducedMotion) { el.textContent = text; if (done) done(); return; }
+  var start = null;
+  function frame(ts) {
+    if (start === null) start = ts;
+    var n = Math.min(text.length, Math.floor((ts - start) / 1000 * 40));
+    el.textContent = text.slice(0, n);
+    if (n < text.length) activeRafs.push(requestAnimationFrame(frame));
+    else if (done) done();
+  }
+  activeRafs.push(requestAnimationFrame(frame));
+}
+
+/* ---------- editorial word diff ---------- */
+
+function diffTokens(a, b) {
+  var wa = String(a).split(/\s+/).filter(Boolean);
+  var wb = String(b).split(/\s+/).filter(Boolean);
+  var m = wa.length, n = wb.length;
+  var dp = [];
+  var i, j;
+  for (i = 0; i <= m; i++) {
+    dp.push([]);
+    for (j = 0; j <= n; j++) dp[i].push(0);
+  }
+  for (i = m - 1; i >= 0; i--) {
+    for (j = n - 1; j >= 0; j--) {
+      dp[i][j] = wa[i] === wb[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  var out = [];
+  i = 0; j = 0;
+  while (i < m && j < n) {
+    if (wa[i] === wb[j]) { out.push(['=', wa[i]]); i++; j++; }
+    else if (dp[i + 1][j] >= dp[i][j + 1]) { out.push(['-', wa[i]]); i++; }
+    else { out.push(['+', wb[j]]); j++; }
+  }
+  while (i < m) { out.push(['-', wa[i]]); i++; }
+  while (j < n) { out.push(['+', wb[j]]); j++; }
+  return out;
+}
+
+function diffHtml(a, b) {
+  /* consecutive removals or additions merge into one run, so the
+     strike or underline draws as a continuous rule, not word confetti */
+  var out = [], run = null, buf = [];
+  function flush() {
+    if (!buf.length) return;
+    var txt = esc(buf.join(' '));
+    if (run === '-') out.push('<del>' + txt + '</del>');
+    else if (run === '+') out.push('<ins>' + txt + '</ins>');
+    else out.push(txt);
+    buf = [];
+  }
+  diffTokens(a, b).forEach(function (t) {
+    if (t[0] !== run) { flush(); run = t[0]; }
+    buf.push(t[1]);
+  });
+  flush();
+  return out.join(' ');
+}
+
+/* ---------- dashboard drawing helpers ---------- */
+
+function avgDims() {
+  var out = {};
+  DIMENSIONS.forEach(function (d) {
+    var sum = 0;
+    STRINGS.forEach(function (s) { sum += s.dims[d]; });
+    out[d] = sum / STRINGS.length;
+  });
+  return out;
+}
+
+function histogramSvg() {
+  var counts = [0, 0, 0, 0, 0, 0, 0, 0];
+  STRINGS.forEach(function (s) {
+    counts[Math.min(7, Math.floor((s.score - 1) / 0.5))]++;
+  });
+  var W = 560, H = 150, PB = 24, PT = 6, PL = 10, PR = 10, gap = 2, n = 8;
+  var bw = (W - PL - PR - gap * (n - 1)) / n;
+  var max = Math.max.apply(null, counts);
+  var svg = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" shape-rendering="crispEdges" role="img" aria-label="score distribution">';
+  counts.forEach(function (c, i) {
+    var bh = max ? Math.round((H - PT - PB) * c / max) : 0;
+    var x = PL + i * (bw + gap);
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + (H - PB - bh) + '" width="' + bw.toFixed(1) + '" height="' + bh + '" fill="#1A1A1A"/>';
+  });
+  svg += '<line x1="' + PL + '" y1="' + (H - PB) + '" x2="' + (W - PR) + '" y2="' + (H - PB) + '" stroke="rgba(0,0,0,0.15)" stroke-width="1"/>';
+  for (var e = 0; e <= n; e++) {
+    var ex = e === n ? W - PR : PL + e * (bw + gap) - (e ? gap / 2 : 0);
+    var anchor = e === 0 ? 'start' : (e === n ? 'end' : 'middle');
+    svg += '<text x="' + ex.toFixed(1) + '" y="' + (H - 8) + '" text-anchor="' + anchor + '" font-family="JetBrains Mono, monospace" font-size="9" fill="#6B6560">' + (1 + e * 0.5).toFixed(1) + '</text>';
+  }
+  return svg + '</svg>';
+}
+
+function heatColor(v) {
+  var t = Math.max(0, Math.min(1, (5 - v) / 4));
+  function ch(a, b) { return Math.round(a + (b - a) * t); }
+  return 'rgb(' + ch(247, 166) + ',' + ch(245, 69) + ',' + ch(240, 48) + ')';
+}
+
+function heatmapSvg() {
+  var labelW = 110, cellW = 88, cellH = 26, gap = 2, top = 20;
+  var W = labelW + 5 * (cellW + gap);
+  var H = top + AREAS.length * (cellH + gap);
+  var svg = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" shape-rendering="crispEdges" role="img" aria-label="area by dimension scores">';
+  DIMENSIONS.forEach(function (d, i) {
+    svg += '<text x="' + (labelW + i * (cellW + gap)) + '" y="12" font-family="JetBrains Mono, monospace" font-size="10" fill="#1A1A1A">' + d + '</text>';
+  });
+  AREAS.forEach(function (a, r) {
+    var yy = top + r * (cellH + gap);
+    svg += '<text x="0" y="' + (yy + cellH / 2 + 3.5) + '" font-family="JetBrains Mono, monospace" font-size="10" fill="#1A1A1A">' + a.name + '</text>';
+    AREA_DIMS[a.name].forEach(function (v, c) {
+      svg += '<rect x="' + (labelW + c * (cellW + gap)) + '" y="' + yy + '" width="' + cellW + '" height="' + cellH + '" fill="' + heatColor(v) + '" stroke="rgba(0,0,0,0.08)" stroke-width="1"/>';
+    });
+  });
+  return svg + '</svg>';
+}
+
+function parseHash() {
+  var h = location.hash.replace(/^#/, '');
+  if (!h) return { name: 'landing' };
+  var m = h.match(/^string\/(.+)$/);
+  if (m) return { name: 'string', id: decodeURIComponent(m[1]) };
+  if (['inventory', 'dashboard', 'rules', 'activity', 'quick'].indexOf(h) >= 0) return { name: h };
+  return { name: 'landing' };
+}
+
+function clearQuickTimers() {
+  quickTimers.forEach(function (t) { clearTimeout(t); clearInterval(t); });
+  quickTimers = [];
+}
+
+function setActiveNav(name) {
+  var items = elSidebar.querySelectorAll('.nav-item');
+  for (var i = 0; i < items.length; i++) {
+    items[i].classList.toggle('active', items[i].dataset.nav === name);
+  }
+}
+
+function rerenderRoute() {
+  var r = parseHash();
+  if (r.name === 'inventory') renderInventory();
+  else if (r.name === 'string') { var s = findString(r.id); if (s) renderDetail(s); }
+  else if (r.name === 'dashboard') renderDashboard();
+  else if (r.name === 'rules') renderRules();
+  else if (r.name === 'activity') renderActivity();
+  else if (r.name === 'quick') renderQuick();
+}
+
+function route() {
+  var r = parseHash();
+  state.openMenu = null;
+  clearQuickTimers();
+  cancelRafs();
+  if (state.quick.phase === 'analyzing') state.quick.phase = 'input';
+
+  if (r.name === 'landing') {
+    elWorkspace.classList.add('hidden');
+    elWorkspace.classList.remove('fade-in');
+    elLanding.classList.remove('hidden', 'fading');
+    lastRoute = 'landing';
+    window.scrollTo(0, 0);
+    startDemo();
+    return;
+  }
+
+  stopDemo();
+
+  var fromLanding = (lastRoute === 'landing' || lastRoute === null);
+  elLanding.classList.add('hidden');
+  elLanding.classList.remove('fading');
+  elWorkspace.classList.remove('hidden');
+  if (fromLanding && lastRoute === 'landing' && !reducedMotion) {
+    elWorkspace.classList.add('fade-in');
+  }
+
+  if (r.name === 'quick' && lastRoute !== 'quick') {
+    state.quick = { phase: 'input', text: '', context: '', type: 'error', result: null };
+  }
+  if (r.name !== 'string' && r.name !== 'inventory') state.openMenu = null;
+
+  setActiveNav(r.name === 'string' ? 'inventory' : r.name);
+  elSidebar.classList.remove('open');
+  rerenderRoute();
+  lastRoute = r.name;
+  window.scrollTo(0, 0);
+}
+
+function enterSandbox() {
+  if (parseHash().name !== 'landing') { location.hash = '#inventory'; return; }
+  if (reducedMotion) { location.hash = '#inventory'; return; }
+  elLanding.classList.add('fading');
+  setTimeout(function () { location.hash = '#inventory'; }, 300);
+}
+
+/* =========================================================
+   screen: inventory
+   ========================================================= */
+
+var INV_MENUS = [
+  { key: 'source', label: 'All sources', options: ['all', 'github', 'figma'] },
+  { key: 'type', label: 'All types', options: ['all', 'error', 'empty', 'confirmation', 'button', 'notification', 'loading', 'form label'] },
+  { key: 'status', label: 'All statuses', options: ['all', 'needs review', 'in review', 'approved'] },
+  { key: 'score', label: 'Score: any', options: ['any', '4.5 and up', '3.0 to 4.4', 'below 3.0'] }
+];
+
+/* display casing for filter values; data-side values stay lowercase keys */
+function dispVal(key, v) {
+  if (v === 'all') return 'All';
+  if (v === 'any') return 'Any';
+  if (key === 'source') return SOURCE_NAME[v] || capFirst(v);
+  return capFirst(v);
+}
+
+function invFiltered() {
+  var q = state.inv.q.toLowerCase();
+  return STRINGS.slice().sort(function (a, b) { return a.mins - b.mins; }).filter(function (s) {
+    if (q && (s.text + ' ' + s.ref).toLowerCase().indexOf(q) < 0) return false;
+    if (state.inv.source !== 'all' && s.source !== state.inv.source) return false;
+    if (state.inv.type !== 'all' && s.type !== state.inv.type) return false;
+    if (state.inv.status !== 'all' && s.status !== state.inv.status) return false;
+    if (state.inv.score === '4.5 and up' && s.score < 4.5) return false;
+    if (state.inv.score === '3.0 to 4.4' && (s.score < 3.0 || s.score >= 4.5)) return false;
+    if (state.inv.score === 'below 3.0' && s.score >= 3.0) return false;
+    return true;
+  });
+}
+
+function invRowsHtml() {
+  var rows = invFiltered();
+  if (!rows.length) {
+    return '<tr><td colspan="6" style="padding:48px 0;color:var(--muted);font-size:14px;cursor:default">Nothing matches these filters.</td></tr>';
+  }
+  return rows.map(function (s) {
+    var expRows = DIMENSIONS.map(function (d) {
+      return '<div class="exp-row"><span class="exp-lab">' + d + '</span>' +
+        scoreCellSvg(s.dims[d], 120, 7, false) +
+        '<span class="exp-val">' + s.dims[d] + '</span></div>';
+    }).join('');
+    return '<tr class="inv-row" data-act="open-string" data-id="' + esc(s.id) + '">' +
+      '<td class="c-string">' + esc(s.text) + '</td>' +
+      '<td class="c-source"><span class="src-k">' + s.source + '</span>' + esc(s.ref) + '</td>' +
+      '<td class="c-type">' + esc(s.type) + '</td>' +
+      '<td class="c-score"><span class="c-scorewrap"><span class="' + scoreCls(s.score) + '">' + s.score.toFixed(1) + '</span>' + scoreBarSvg(s.dims, 80, 8) + '</span></td>' +
+      '<td class="c-status">' + statusHtml(s.status) + '</td>' +
+      '<td class="c-updated">' + esc(s.updated) + '</td>' +
+      '</tr>' +
+      '<tr class="inv-exp" data-act="open-string" data-id="' + esc(s.id) + '">' +
+      '<td colspan="6"><div class="exp-inner"><div class="exp-pad">' + expRows + '</div></div></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function invCountText() {
+  return 'Showing ' + invFiltered().length + ' of ' + WORKSPACE.tracked + ' · recently updated first';
+}
+
+function chipHtml(menu) {
+  var val = state.inv[menu.key];
+  var isDefault = (val === 'all' || val === 'any');
+  var label = isDefault ? menu.label : (menu.key === 'score' ? 'Score: ' + val : dispVal(menu.key, val));
+  var open = state.openMenu === menu.key;
+  var html = '<span class="chip-wrap">' +
+    '<button type="button" class="fchip' + (isDefault ? '' : ' set') + '" data-act="menu" data-menu="' + menu.key + '">' + esc(label) + ' ▾</button>';
+  if (open) {
+    html += '<div class="fmenu">' + menu.options.map(function (o) {
+      return '<button type="button" data-act="menu-opt" data-key="' + menu.key + '" data-val="' + esc(o) + '"' +
+        (o === val ? ' class="cur"' : '') + '>' + esc(dispVal(menu.key, o)) + '</button>';
+    }).join('') + '</div>';
+  }
+  return html + '</span>';
+}
+
+function renderInventory() {
+  var html =
+    '<h1 class="page-title">Inventory</h1>' +
+    '<p class="page-sub">All user-facing strings across your product</p>' +
+
+    '<div class="statbar">' +
+      '<div class="stat"><div class="stat-v">' + WORKSPACE.tracked + '</div><div class="stat-l">strings tracked</div></div>' +
+      '<div class="stat"><div class="stat-v">' + WORKSPACE.avg + '</div><div class="stat-l">avg score</div></div>' +
+      '<div class="stat"><div class="stat-v up">↑ ' + WORKSPACE.delta + '</div><div class="stat-l">vs last month</div></div>' +
+      '<div class="stat"><div class="stat-v"><span class="warn-dot">●</span>' + WORKSPACE.needsReview + '</div><div class="stat-l">need review</div></div>' +
+    '</div>' +
+
+    '<div class="filter-row">' +
+      '<input type="text" id="invSearch" placeholder="Search strings…" autocomplete="off">' +
+      INV_MENUS.map(chipHtml).join('') +
+      '<button type="button" class="add-btn">+ Add strings</button>' +
+    '</div>' +
+
+    '<table class="inv"><thead><tr>' +
+      '<th class="c-string">string</th><th class="c-source">source</th><th>type</th><th>score</th><th>status</th><th>updated</th>' +
+    '</tr></thead><tbody id="invBody">' + invRowsHtml() + '</tbody></table>' +
+    '<p class="inv-count" id="invCount">' + invCountText() + '</p>';
+
+  elMain.innerHTML = html;
+
+  var si = document.getElementById('invSearch');
+  si.value = state.inv.q;
+  si.addEventListener('input', function () {
+    state.inv.q = si.value;
+    document.getElementById('invBody').innerHTML = invRowsHtml();
+    document.getElementById('invCount').textContent = invCountText();
+  });
+}
+
+/* =========================================================
+   screen: string detail
+   ========================================================= */
+
+function dimRowsHtml(scores, notes) {
+  return DIMENSIONS.map(function (dim) {
+    var score = scores[dim];
+    var note = (score <= 3 && notes && notes[dim]) ? escT(notes[dim]) : '';
+    return '<div class="dim-row' + (score <= 3 ? ' low' : '') + '">' +
+      '<div><div class="dim-name">' + dim.toUpperCase() + '</div>' +
+      '<div class="dim-desc">' + DIMENSION_DESCRIPTIONS[dim] + '</div></div>' +
+      '<span class="dim-score">' + score + '<span class="dim-max"> /5</span></span>' +
+      '<span class="dim-note">' + note + '</span>' +
+      '</div>';
+  }).join('');
+}
+
+function renderDetail(s) {
+  var assigned = state.assignments[s.id];
+  var assignLabel = assigned ? 'Assigned: ' + assigned : 'Assign ▾';
+  var assignOpen = state.openMenu === 'assign';
+
+  var html =
+    '<p class="crumb"><a data-act="back">Inventory</a> / ' + esc(s.ref) + '</p>' +
+
+    '<div class="det-head">' +
+      '<div class="det-key">' + esc(s.ref) + '</div>' +
+      '<div class="det-tools">' + statusHtml(s.status) +
+        '<span class="assign-wrap"><button type="button" class="fchip' + (assigned ? ' set' : '') + '" data-act="assign">' + esc(assignLabel) + '</button>' +
+        (assignOpen
+          ? '<div class="fmenu">' + TEAM.map(function (t) {
+              return '<button type="button" data-act="assign-opt" data-id="' + esc(s.id) + '" data-val="' + esc(t) + '"' + (t === assigned ? ' class="cur"' : '') + '>' + esc(t) + '</button>';
+            }).join('') + '</div>'
+          : '') +
+        '</span>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="submitted-copy det-string">' + esc(s.text) + '</div>' +
+    '<p class="det-meta">Type: ' + esc(s.type) + ' · Source: ' + (SOURCE_NAME[s.source] || s.source) + ' · Updated ' + esc(s.updated) + ' · First seen ' + esc(s.firstSeen) + '</p>' +
+
+    '<div class="det-sec">' +
+      '<p class="mono-label">overall</p>' +
+      '<div class="det-overall"><span class="det-score">' + s.score.toFixed(1) + '</span>' +
+      '<span class="det-grade">' + gradeLabel(s.score) + '</span></div>' +
+      '<div class="det-bigbar">' + scoreBarSvg(s.dims, 480, 32) + '</div>' +
+      '<div class="det-dims">' + dimRowsHtml(s.dims, s.notes) + '</div>' +
+    '</div>';
+
+  if (s.rewrite && s.score < 4.5) {
+    html +=
+      '<div class="det-sec">' +
+        '<p class="mono-label">suggested rewrite</p>' +
+        '<div class="rewrite-copy diff">' + diffHtml(s.text, s.rewrite) + '</div>' +
+        '<p class="rewrite-why">What this rewrite improves: ' + escT(s.rewriteWhy) + '</p>' +
+        '<div class="rewrite-actions"><button type="button" class="ghost-btn" data-act="copy-rw" data-id="' + esc(s.id) + '">Copy →</button></div>' +
+      '</div>';
+  }
+
+  html += '<div class="det-sec"><p class="mono-label">version history</p>';
+  if (s.versions.length) {
+    var seq = s.versions.concat([{ text: s.text, score: s.score.toFixed(1), current: true }]);
+    html += seq.map(function (v, i) {
+      var body = i === 0 ? esc(v.text) : diffHtml(seq[i - 1].text, v.text);
+      var margin = v.current
+        ? 'Current · updated ' + esc(s.updated) + ' · scored ' + esc(v.score)
+        : esc(v.when) + ' · by ' + esc(v.author) + ' · scored ' + esc(v.score);
+      return '<div class="ver-diff"><div class="ver-text diff">' + body + '</div>' +
+        '<div class="marginalia">' + margin + '</div></div>';
+    }).join('');
+  } else {
+    html += '<p class="empty-note">No earlier versions tracked.</p>';
+  }
+  html += '</div>';
+
+  if (s.violations.length) {
+    html += '<div class="det-sec"><p class="mono-label">rule violations</p>' +
+      s.violations.map(function (v, i) {
+        var done = state.overrides[s.id + '|' + i];
+        return '<div class="vio"><div><div class="vio-name">' + escT(v.rule) + '</div>' +
+          '<div class="vio-note">' + escT(v.note) + ' This rule was authored by your team.</div></div>' +
+          (done
+            ? '<span class="vio-done">Overridden</span>'
+            : '<button type="button" class="ghost-btn" data-act="override" data-id="' + esc(s.id) + '" data-idx="' + i + '">Override</button>') +
+          '</div>';
+      }).join('') +
+      '</div>';
+  }
+
+  html += '<div class="det-sec"><p class="mono-label">discussion</p>';
+  if (s.comments.length) {
+    html += s.comments.map(function (c) {
+      return '<div class="cmt"><span class="cmt-av">' + INITIALS[c.name] + '</span>' +
+        '<div><div class="cmt-meta">' + esc(c.name) + ' · ' + esc(c.when) + '</div>' +
+        '<div class="cmt-text">' + escT(c.text) + '</div></div></div>';
+    }).join('');
+  } else {
+    html += '<p class="empty-note">No discussion yet.</p>';
+  }
+  html +=
+    '<div class="cmt-input-row">' +
+      '<input type="text" class="cmt-input" placeholder="Add a comment…">' +
+      '<button type="button" class="ghost-btn">Comment</button>' +
+    '</div></div>';
+
+  elMain.innerHTML = html;
+}
+
+/* =========================================================
+   screen: dashboard
+   ========================================================= */
+
+function trendChartSvg() {
+  var W = 760, H = 230, PL = 44, PR = 14, PT = 16, PB = 30;
+  var lo = 3.0, hi = 4.5;
+  var n = TREND_DATA.length;
+  function x(i) { return PL + i * (W - PL - PR) / (n - 1); }
+  function y(v) { return PT + (1 - (v - lo) / (hi - lo)) * (H - PT - PB); }
+
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="average score, last 8 weeks, rising from 3.3 to 3.8">';
+  [3.0, 3.5, 4.0, 4.5].forEach(function (g) {
+    svg += '<line x1="' + PL + '" y1="' + y(g) + '" x2="' + (W - PR) + '" y2="' + y(g) + '" stroke="rgba(0,0,0,0.08)" stroke-width="1"/>';
+    svg += '<text x="' + (PL - 10) + '" y="' + (y(g) + 3.5) + '" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#6B6560">' + g.toFixed(1) + '</text>';
+  });
+  var pts = TREND_DATA.map(function (v, i) { return x(i).toFixed(1) + ',' + y(v).toFixed(1); }).join(' ');
+  svg += '<polyline points="' + pts + '" fill="none" stroke="#2F4A3A" stroke-width="1.5"/>';
+  TREND_DATA.forEach(function (v, i) {
+    svg += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(v).toFixed(1) + '" r="2.5" fill="#2F4A3A"/>';
+  });
+  svg += '<text x="' + PL + '" y="' + (H - 8) + '" font-family="JetBrains Mono, monospace" font-size="10" fill="#6B6560">8w ago</text>';
+  svg += '<text x="' + x(4).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#6B6560">4w ago</text>';
+  svg += '<text x="' + (W - PR) + '" y="' + (H - 8) + '" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#6B6560">now</text>';
+  return svg + '</svg>';
+}
+
+function renderDashboard() {
+  var html =
+    '<h1 class="page-title">Dashboard</h1>' +
+    '<p class="page-sub">How Vellum Finance is doing this month</p>' +
+
+    '<div class="statbar">' +
+      '<div class="stat"><div class="stat-v">' + WORKSPACE.tracked + '</div><div class="stat-l">total strings</div></div>' +
+      '<div class="stat"><div class="stat-v">' + WORKSPACE.avg + ' <span class="up" style="font-size:14px">↑ ' + WORKSPACE.delta + '</span></div><div class="stat-l">avg score</div></div>' +
+      '<div class="stat"><div class="stat-v warn">' + WORKSPACE.needsReview + '</div><div class="stat-l">need review</div></div>' +
+      '<div class="stat"><div class="stat-v warn">' + WORKSPACE.regressions + '</div><div class="stat-l">regressions this week</div></div>' +
+    '</div>' +
+
+    '<div class="dash-agg">' + scoreBarSvg(avgDims(), 480, 24) +
+      '<p class="shot-cap">The whole workspace, five dimensions at a glance.</p>' +
+    '</div>' +
+
+    '<div class="dash-sec">' +
+      '<p class="mono-label">score trend — last 8 weeks</p>' +
+      '<div class="chart-wrap">' + trendChartSvg() + '</div>' +
+    '</div>' +
+
+    '<div class="dash-sec">' +
+      '<p class="mono-label">score distribution</p>' +
+      '<div class="viz">' + histogramSvg() +
+      '<p class="shot-cap">Where your strings sit, from 1.0 to 5.0.</p></div>' +
+    '</div>' +
+
+    '<div class="dash-sec">' +
+      '<p class="mono-label">by area and dimension</p>' +
+      '<div class="viz">' + heatmapSvg() +
+      '<p class="shot-cap">Each area, dimension by dimension. Deeper red, weaker copy.</p></div>' +
+    '</div>' +
+
+    '<div class="dash-sec">' +
+      '<p class="mono-label">by product area</p>' +
+      '<table class="area"><thead><tr><th>area</th><th>strings</th><th>avg score</th><th>trend</th></tr></thead><tbody>' +
+      AREAS.map(function (a) {
+        return '<tr><td class="area-name">' + a.name + '</td>' +
+          '<td class="area-count">' + a.count + '</td>' +
+          '<td class="area-avg">' + a.avg + '</td>' +
+          '<td class="area-trend ' + (a.trend === 'up' ? 't-up">↑' : 't-flat">→') + '</td></tr>';
+      }).join('') +
+      '</tbody></table>' +
+    '</div>' +
+
+    '<div class="dash-sec">' +
+      '<p class="mono-label">regressed this week</p>' +
+      REGRESSIONS.map(function (r, i) {
+        var o = REG_OLD[i];
+        return '<div class="regv">' +
+          '<div class="regv-bars">' + scoreBarSvg(o.oldDims, 150, 12) +
+          '<span class="regv-delta">' + r.from + ' → ' + r.to + '</span>' +
+          scoreBarSvg(o.newDims, 150, 12) + '</div>' +
+          '<div class="regv-copy diff"><del>' + esc(o.oldText) + '</del><ins>' + esc(r.text) + '</ins></div>' +
+          '<div class="marginalia">' + esc(r.when) + ' · changed by ' + esc(r.by) + '</div>' +
+          '</div>';
+      }).join('') +
+      '<p class="shot-cap">What slipped this week, and what the copy lost.</p>' +
+    '</div>' +
+
+    '<div class="dash-sec">' +
+      '<p class="callout">Notifications is your strongest area this month. Average score up from 3.9 to 4.3.</p>' +
+    '</div>';
+
+  elMain.innerHTML = html;
+}
+
+/* =========================================================
+   screen: rules
+   ========================================================= */
+
+function renderRules() {
+  var html =
+    '<h1 class="page-title">Rules</h1>' +
+    '<p class="page-sub">Your team’s brand voice, encoded and enforced</p>' +
+
+    '<div class="rules-sec">' +
+      '<p class="mono-label">terminology dictionary</p>' +
+      '<p class="sec-desc">Preferred terms and the ones we’ve moved away from. These are checked automatically on every string.</p>' +
+      '<table class="term"><thead><tr><th>preferred</th><th>avoid</th></tr></thead><tbody>' +
+      TERMINOLOGY.map(function (t) {
+        return '<tr><td class="term-pref">' + escT(t[0]) + '</td><td class="term-avoid">' + escT(t[1]) + '</td></tr>';
+      }).join('') +
+      '</tbody></table>' +
+      '<button type="button" class="add-btn">+ Add term</button>' +
+    '</div>' +
+
+    '<div class="rules-sec">' +
+      '<p class="mono-label">voice rules</p>' +
+      RULES.map(function (r) {
+        return '<div class="rule-row"><div class="rule-main">' +
+          '<div class="rule-name">' + escT(r.name) + '</div>' +
+          '<div class="rule-desc">' + escT(r.desc) + '</div></div>' +
+          '<div class="rule-side"><span class="sev-' + r.severity + '">' + r.severity + '</span>' +
+          '<span class="rule-count">Triggered ' + r.count + ' times this month</span></div></div>';
+      }).join('') +
+    '</div>' +
+
+    '<div class="rules-sec">' +
+      '<p class="mono-label">voice profile</p>' +
+      '<p class="profile">' + escT(VOICE_PROFILE) + '</p>' +
+    '</div>';
+
+  elMain.innerHTML = html;
+}
+
+/* =========================================================
+   screen: activity
+   ========================================================= */
+
+var ACT_TABS = [
+  { key: 'all', label: 'All activity' },
+  { key: 'pr', label: 'Pull requests' },
+  { key: 'deploy', label: 'Deploys' },
+  { key: 'manual', label: 'Manual edits' }
+];
+
+function prBoxHtml() {
+  var verdictRow;
+  if (state.prResolved === 'blocked') {
+    verdictRow = 'Merge blocked. 1 string must reach 2.5 before this can ship.';
+  } else if (state.prResolved === 'overridden') {
+    verdictRow = 'Check overridden by Sara Chen. Logged to the workspace record.';
+  } else {
+    verdictRow = '1 string is below the workspace minimum (2.5). Block merge? ' +
+      '<button type="button" class="pr-btn solid" data-act="pr-yes">Yes</button>' +
+      '<button type="button" class="pr-btn" data-act="pr-override">Override</button>';
+  }
+  return '<div class="pr-box">' +
+    '<p class="pr-head">Linewise · bot · 2h ago</p>' +
+    '<table class="pr-table">' +
+    PR_CHECK.map(function (c) {
+      var mark;
+      if (c.verdict === 'pass') mark = '<span class="chk-pass">' + c.score + ' ✓ Passed</span>';
+      else if (c.verdict === 'flag') mark = c.score + ' ◐ Flagged';
+      else mark = '<span class="chk-fail">' + c.score + ' ✗ Failed</span>';
+      return '<tr><td>' + esc(c.key) + '</td><td>' + mark + '</td>' +
+        '<td class="pr-reason">' + escT(c.reason) + '</td></tr>';
+    }).join('') +
+    '</table>' +
+    '<div class="pr-verdict">' + verdictRow + '</div>' +
+    '</div>';
+}
+
+function renderActivity() {
+  var items = ACTIVITY.filter(function (a) {
+    return state.activityTab === 'all' || a.kind === state.activityTab;
+  });
+
+  var html =
+    '<h1 class="page-title">Activity</h1>' +
+    '<p class="page-sub">Every deploy, every pull request, every string that changed</p>' +
+
+    '<div class="tabs">' +
+    ACT_TABS.map(function (t) {
+      return '<button type="button" class="tab' + (state.activityTab === t.key ? ' active' : '') + '" data-act="tab" data-tab="' + t.key + '">' + t.label + '</button>';
+    }).join('') +
+    '</div>' +
+
+    items.map(function (a) {
+      var h = '<div class="act"><div class="act-title">' + esc(a.title) + '</div>' +
+        '<div class="act-meta">' + esc(a.meta) + '</div>' +
+        '<div class="act-sum">' + esc(a.sum) +
+        (a.check ? '<span class="' + (a.check === 'passed' ? 'chk-pass' : 'chk-fail') + '">' + capFirst(a.check) + '</span>' : '') +
+        '</div>';
+      if (a.prev) h += '<div class="act-prev">' + esc(a.prev) + '</div>';
+      if (a.expandable) {
+        h += '<button type="button" class="act-link" data-act="toggle-pr">' + (state.prOpen ? 'Hide details' : 'View details →') + '</button>';
+        if (state.prOpen) h += prBoxHtml();
+      }
+      return h + '</div>';
+    }).join('');
+
+  if (!items.length) {
+    html += '<p class="empty-note" style="margin-top:40px">Nothing here yet.</p>';
+  }
+
+  elMain.innerHTML = html;
+}
+
+/* =========================================================
+   screen: quick analysis
+   ========================================================= */
+
+/* ---------- landing live demonstration ---------- */
+
+var demoTimers = [];
+function stopDemo() {
+  demoTimers.forEach(function (t) { clearTimeout(t); });
+  demoTimers = [];
+}
+
+function startDemo() {
+  stopDemo();
+  var s0 = STRINGS[0];
+  var strEl = document.getElementById('demoStr');
+  var barsEl = document.getElementById('demoBars');
+  var scoreEl = document.getElementById('demoScore');
+  var rwEl = document.getElementById('demoRwText');
+  var curEl = document.getElementById('demoCur');
+  if (!strEl || !barsEl || !scoreEl || !rwEl || !curEl) return;
+  strEl.textContent = s0.text;
+
+  function pass() {
+    barsEl.innerHTML = DIMENSIONS.map(function (d) {
+      return '<div class="demo-row"><span class="demo-lab">' + d + '</span>' +
+        '<span class="demo-barwrap">' + scoreCellSvg(s0.dims[d], 260, 12, !reducedMotion) + '</span></div>';
+    }).join('');
+    curEl.classList.add('off');
+    if (reducedMotion) {
+      scoreEl.textContent = s0.score.toFixed(1);
+      rwEl.textContent = s0.rewrite;
+      return;
+    }
+    scoreEl.textContent = '0.0';
+    rwEl.textContent = '';
+    animateBars(barsEl, function () {
+      animateScore(scoreEl, s0.score);
+      demoTimers.push(setTimeout(function () {
+        curEl.classList.remove('off');
+        typewriter(rwEl, s0.rewrite, function () {
+          demoTimers.push(setTimeout(pass, 3000));
+        });
+      }, 500));
+    });
+  }
+  pass();
+}
+
+function renderQuick() {
+  if (state.quick.phase === 'results') { renderQuickResults(); return; }
+
+  var html =
+    '<h1 class="page-title">Quick analysis</h1>' +
+    '<p class="page-sub">Score a single string against the rubric</p>' +
+    '<div class="q-zone">' +
+      '<p class="q-note">For one-off analysis. For continuous review across your product, use the inventory.</p>' +
+      '<div id="qZone">' +
+        '<label class="field-label" for="qText">your copy</label>' +
+        '<textarea id="qText" placeholder="Paste your microcopy here…" spellcheck="false" rows="3"></textarea>' +
+        '<div class="counter-row"><span id="qCount"></span></div>' +
+        '<div class="meta-row">' +
+          '<div><span class="field-label">copy type</span><div class="type-row" id="qTypeRow">' +
+          COPY_TYPES.map(function (t, i) {
+            return (i > 0 ? '<span class="type-sep">/</span>' : '') +
+              '<button type="button" class="type-btn' + (t === state.quick.type ? ' selected' : '') + '" data-act="q-type" data-val="' + esc(t) + '">' + t + '</button>';
+          }).join('') +
+          '</div><button type="button" id="qSuggest" data-act="q-suggest"></button></div>' +
+          '<div><label class="field-label" for="qContext">where it appears</label>' +
+          '<input type="text" id="qContext" placeholder="Checkout page, settings, onboarding…">' +
+          '<span class="field-hint">Optional. Context sharpens the trust score.</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="q-actions" id="qActions">' +
+        '<div class="q-actions-line">' +
+          '<button type="button" id="qAnalyze" class="idle" data-act="q-analyze">Analyze →</button>' +
+          '<span class="kbd-hint" id="qKbd">Or press Cmd + Enter</span>' +
+        '</div>' +
+        '<p id="qStatus"></p>' +
+        '<p id="qHint">Paste some copy above, then analyze.</p>' +
+      '</div>' +
+    '</div>';
+
+  elMain.innerHTML = html;
+
+  var ta = document.getElementById('qText');
+  var ctx = document.getElementById('qContext');
+  ta.value = state.quick.text;
+  ctx.value = state.quick.context;
+
+  if (navigator.platform && navigator.platform.indexOf('Mac') === -1) {
+    document.getElementById('qKbd').textContent = 'Or press Ctrl + Enter';
+  }
+
+  function autogrow() {
+    ta.style.height = 'auto';
+    ta.style.height = Math.max(140, ta.scrollHeight) + 'px';
+  }
+
+  function syncQuickUI() {
+    state.quick.text = ta.value;
+    var n = ta.value.trim() ? wordCount(ta.value) : 0;
+    var counter = document.getElementById('qCount');
+    var btn = document.getElementById('qAnalyze');
+    if (n > 0) {
+      counter.textContent = n + (n === 1 ? ' word' : ' words');
+      counter.classList.add('visible');
+      btn.classList.remove('idle');
+    } else {
+      counter.classList.remove('visible');
+      btn.classList.add('idle');
+    }
+    autogrow();
+    document.getElementById('qHint').classList.remove('visible');
+
+    var detected = detectType(ta.value);
+    var sug = document.getElementById('qSuggest');
+    if (detected && detected !== state.quick.type) {
+      sug.textContent = 'Looks like ' + detected + '. Set type →';
+      sug.dataset.val = detected;
+      sug.classList.add('visible');
+    } else {
+      sug.classList.remove('visible');
+    }
+  }
+
+  ta.addEventListener('input', syncQuickUI);
+  ctx.addEventListener('input', function () { state.quick.context = ctx.value; });
+  syncQuickUI();
+  if (state.quick.autofocus) { ta.focus(); state.quick.autofocus = false; }
+}
+
+function setQuickType(t) {
+  state.quick.type = t;
+  var btns = document.querySelectorAll('#qTypeRow .type-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.toggle('selected', btns[i].dataset.val === t);
+  }
+  var sug = document.getElementById('qSuggest');
+  if (sug && sug.dataset.val === t) sug.classList.remove('visible');
+}
+
+function quickAnalyze() {
+  if (state.quick.phase !== 'input') return;
+  var ta = document.getElementById('qText');
+  if (!ta) return;
+  if (!ta.value.trim()) {
+    document.getElementById('qHint').classList.add('visible');
+    ta.focus();
+    return;
+  }
+
+  state.quick.text = ta.value;
+  state.quick.result = analyze(state.quick.text, state.quick.type, state.quick.context);
+  state.quick.phase = 'analyzing';
+  renderQuickResults(true);
+  window.scrollTo(0, 0);
+}
+
+function renderQuickResults(animate) {
+  var r = state.quick.result;
+  var doAnim = !!animate && !reducedMotion;
+  var submitted = state.quick.text.trim();
+  var isTemplate = r.rewrite ? /\[/.test(r.rewrite) : false;
+  var rewriteHtml = r.rewrite ? (isTemplate ? esc(r.rewrite) : diffHtml(submitted, r.rewrite)) : '';
+
+  var html =
+    '<h1 class="page-title">Quick analysis</h1>' +
+    '<p class="page-sub">Score a single string against the rubric</p>' +
+    '<div class="q-results">' +
+
+    '<div class="r-sec">' +
+      '<p class="mono-label">submitted copy</p>' +
+      '<div class="submitted-copy">' + esc(submitted) + '</div>' +
+      '<p class="submitted-meta">Type: ' + esc(state.quick.type) + ' · Context: ' + esc(state.quick.context.trim() || 'Not provided') + '</p>' +
+    '</div>' +
+
+    '<div class="r-sec">' +
+      '<p class="mono-label">overall</p>' +
+      '<div class="overall-line"><span class="overall-score" id="qScore">' + (doAnim ? '0.0' : r.overall) + '</span><span class="overall-max">/ 5</span></div>' +
+      '<div class="det-bigbar" id="qBigbar">' + scoreBarSvg(r.scores, 480, 32, { empty: doAnim }) + '</div>' +
+      '<p class="overall-grade">' + r.grade + '</p>' +
+      '<p class="grade-sub">' + (GRADE_SUBLINES[r.grade] || '') + '</p>' +
+    '</div>' +
+
+    '<div class="r-sec">' +
+      '<p class="mono-label">by dimension</p>' +
+      dimRowsHtml(r.scores, r.explanations) +
+    '</div>';
+
+  if (r.rewrite) {
+    html +=
+      '<div class="r-sec">' +
+        '<p class="mono-label">suggested rewrite</p>' +
+        '<div class="rewrite-copy diff" id="qRewrite">' +
+        (doAnim ? '<span id="qRwText"></span><span class="tcur off" id="qCur"></span>' : rewriteHtml) +
+        '</div>' +
+        '<p class="rewrite-why">What this rewrite improves: ' + escT(r.rewriteWhy) + '</p>' +
+        '<div class="rewrite-actions">' +
+          (isTemplate ? '' : '<button type="button" id="qAgain" data-act="q-again">Analyze this rewrite →</button>') +
+          '<button type="button" class="ghost-btn" data-act="q-copy" id="qCopyBtn">Copy →</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  html +=
+    '<div class="r-sec" style="margin-bottom:0">' +
+      '<button type="button" class="back-link" data-act="q-back">← Analyze another</button>' +
+      '<span class="kbd-hint" style="margin-left:20px">Or press Esc</span>' +
+    '</div></div>';
+
+  elMain.innerHTML = html;
+
+  if (doAnim) {
+    animateBars(document.getElementById('qBigbar'), function () {
+      animateScore(document.getElementById('qScore'), parseFloat(r.overall));
+      var t = setTimeout(function () {
+        var rwEl = document.getElementById('qRwText');
+        var cur = document.getElementById('qCur');
+        if (rwEl && r.rewrite) {
+          if (cur) cur.classList.remove('off');
+          typewriter(rwEl, r.rewrite, function () {
+            if (cur) cur.classList.add('off');
+            rwEl.innerHTML = rewriteHtml;
+            if (state.quick.phase === 'analyzing') state.quick.phase = 'results';
+          });
+        } else if (state.quick.phase === 'analyzing') {
+          state.quick.phase = 'results';
+        }
+      }, 500);
+      quickTimers.push(t);
+    });
+  } else if (animate) {
+    state.quick.phase = 'results';
+  } else {
+    animateScore(document.getElementById('qScore'), parseFloat(r.overall));
+  }
+}
+
+function animateScore(el, target) {
+  if (!el) return;
+  if (reducedMotion) { el.textContent = target.toFixed(1); return; }
+  var duration = 400;
+  var startTime = null;
+  function step(ts) {
+    if (startTime === null) startTime = ts;
+    var t = Math.min(1, (ts - startTime) / duration);
+    var eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = (target * eased).toFixed(1);
+    if (t < 1) requestAnimationFrame(step);
+    else el.textContent = target.toFixed(1);
+  }
+  el.textContent = '0.0';
+  requestAnimationFrame(step);
+}
+
+/* =========================================================
+   clipboard
+   ========================================================= */
+
+function copyText(text, btn) {
+  function done() {
+    if (!btn) return;
+    btn.textContent = 'Copied';
+    setTimeout(function () { btn.innerHTML = 'Copy →'; }, 1500);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, done);
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) { /* clipboard unavailable */ }
+    document.body.removeChild(ta);
+    done();
+  }
+}
+
+/* =========================================================
+   events
+   ========================================================= */
+
+document.addEventListener('click', function (e) {
+  var enterEl = e.target.closest('[data-enter]');
+  if (enterEl) { e.preventDefault(); enterSandbox(); return; }
+
+  var t = e.target.closest('[data-act]');
+  if (!t) {
+    if (state.openMenu && !e.target.closest('.fmenu')) {
+      state.openMenu = null;
+      rerenderRoute();
+    }
+    return;
+  }
+
+  var act = t.dataset.act;
+  var s;
+
+  switch (act) {
+    case 'menu':
+      state.openMenu = (state.openMenu === t.dataset.menu) ? null : t.dataset.menu;
+      rerenderRoute();
+      break;
+    case 'menu-opt':
+      state.inv[t.dataset.key] = t.dataset.val;
+      state.openMenu = null;
+      rerenderRoute();
+      break;
+    case 'open-string':
+      location.hash = '#string/' + encodeURIComponent(t.dataset.id);
+      break;
+    case 'back':
+      location.hash = '#inventory';
+      break;
+    case 'assign':
+      state.openMenu = (state.openMenu === 'assign') ? null : 'assign';
+      rerenderRoute();
+      break;
+    case 'assign-opt':
+      state.assignments[t.dataset.id] = t.dataset.val;
+      state.openMenu = null;
+      rerenderRoute();
+      break;
+    case 'override':
+      state.overrides[t.dataset.id + '|' + t.dataset.idx] = true;
+      rerenderRoute();
+      break;
+    case 'copy-rw':
+      s = findString(t.dataset.id);
+      if (s && s.rewrite) copyText(s.rewrite, t);
+      break;
+    case 'tab':
+      state.activityTab = t.dataset.tab;
+      rerenderRoute();
+      break;
+    case 'toggle-pr':
+      state.prOpen = !state.prOpen;
+      rerenderRoute();
+      break;
+    case 'pr-yes':
+      state.prResolved = 'blocked';
+      rerenderRoute();
+      break;
+    case 'pr-override':
+      state.prResolved = 'overridden';
+      rerenderRoute();
+      break;
+    case 'q-type':
+      setQuickType(t.dataset.val);
+      break;
+    case 'q-suggest':
+      if (t.dataset.val) setQuickType(t.dataset.val);
+      break;
+    case 'q-analyze':
+      quickAnalyze();
+      break;
+    case 'q-back':
+      clearQuickTimers();
+      cancelRafs();
+      state.quick.phase = 'input';
+      state.quick.result = null;
+      state.quick.text = '';
+      state.quick.context = '';
+      state.quick.autofocus = true;
+      renderQuick();
+      window.scrollTo(0, 0);
+      break;
+    case 'q-copy':
+      if (state.quick.result && state.quick.result.rewrite) copyText(state.quick.result.rewrite, t);
+      break;
+    case 'q-again':
+      if (state.quick.result && state.quick.result.rewrite) {
+        clearQuickTimers();
+        cancelRafs();
+        state.quick.text = state.quick.result.rewrite;
+        state.quick.phase = 'input';
+        state.quick.result = null;
+        renderQuick();
+        quickAnalyze();
+      }
+      break;
+  }
+});
+
+document.getElementById('menuBtn').addEventListener('click', function () {
+  elSidebar.classList.toggle('open');
+});
+
+document.addEventListener('keydown', function (e) {
+  var r = parseHash();
+
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && r.name === 'quick' && state.quick.phase === 'input') {
+    e.preventDefault();
+    quickAnalyze();
+    return;
+  }
+
+  if (e.key === 'Escape') {
+    if (state.openMenu) {
+      state.openMenu = null;
+      rerenderRoute();
+      return;
+    }
+    if (r.name === 'quick' && state.quick.phase === 'results') {
+      clearQuickTimers();
+      cancelRafs();
+      state.quick.phase = 'input';
+      state.quick.result = null;
+      state.quick.text = '';
+      state.quick.context = '';
+      renderQuick();
+      window.scrollTo(0, 0);
+      return;
+    }
+    if (r.name !== 'landing') location.hash = '';
+  }
+});
+
+window.addEventListener('hashchange', route);
+route();
+</script>
+
+</body>
+</html>

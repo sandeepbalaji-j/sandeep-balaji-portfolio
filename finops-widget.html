@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>FinOps</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+* { font-family: 'Inter', system-ui, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #C8CDD6;
+  background-image:
+    radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.18) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 80%, rgba(0,0,0,.06) 0%, transparent 60%);
+}
+
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes fadeUp  { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@keyframes blink   { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+@keyframes pingRing{ 0% { transform: scale(1); opacity: .5; } 100% { transform: scale(1.9); opacity: 0; } }
+
+.fade-up  { animation: fadeUp .22s ease-out both; }
+.spinner  { animation: spin .85s linear infinite; }
+.blink    { animation: blink 2.4s ease-in-out infinite; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ── tiny icon helpers ─────────────────────────────── */
+const Svg = ({ children, size = 16, className = '', vb = '0 0 24 24' }) => (
+  <svg width={size} height={size} viewBox={vb} fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    className={className}>
+    {children}
+  </svg>
+);
+
+const SparkleIcon = ({ size = 14, color = '#7C3AED' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" fill={color}>
+    <path d="M8 1 L9.6 6.4 L15 8 L9.6 9.6 L8 15 L6.4 9.6 L1 8 L6.4 6.4 Z" />
+  </svg>
+);
+
+const CheckIcon = ({ size = 16, color = 'white' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color}
+    strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const RefreshIcon = ({ size = 14 }) => (
+  <Svg size={size}>
+    <path d="M23 4v6h-6" /><path d="M1 20v-6h6" />
+    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+  </Svg>
+);
+
+const ChevDown = ({ color = '#9CA3AF' }) => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={color}
+    strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+const ChevUp = ({ color = '#9CA3AF' }) => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={color}
+    strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="18 15 12 9 6 15" />
+  </svg>
+);
+
+/* ── buttons ───────────────────────────────────────── */
+const PrimaryBtn = ({ children, onClick, disabled }) => (
+  <button onClick={onClick} disabled={disabled}
+    style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+    className="w-full h-10 rounded-[9px] bg-violet-600 hover:bg-violet-700 active:scale-[.98]
+      text-white text-[13.5px] font-semibold flex items-center justify-center gap-1.5
+      transition-all duration-150 disabled:opacity-40 disabled:pointer-events-none shadow-sm shadow-violet-200">
+    {children}
+  </button>
+);
+
+const OutlineBtn = ({ children, onClick }) => (
+  <button onClick={onClick}
+    style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+    className="w-full h-10 rounded-[9px] border border-gray-200 hover:border-gray-300
+      hover:bg-gray-50 active:scale-[.98] text-gray-600 text-[13.5px] font-medium
+      flex items-center justify-center gap-1.5 transition-all duration-150">
+    {children}
+  </button>
+);
+
+const LinkBtn = ({ children, onClick }) => (
+  <button onClick={onClick}
+    className="w-full text-center text-[12.5px] text-violet-600 hover:text-violet-700
+      font-medium py-1 transition-colors">
+    {children}
+  </button>
+);
+
+/* ── widget chrome ─────────────────────────────────── */
+const TitleBar = () => (
+  <div className="flex items-center justify-between px-[14px] py-[10px] border-b border-gray-100/80">
+    <div className="flex items-center gap-[7px]">
+      <div className="w-[22px] h-[22px] rounded-[6px] bg-violet-600 flex items-center justify-center">
+        <SparkleIcon size={11} color="white" />
+      </div>
+      <span className="text-[13px] font-semibold text-gray-800 tracking-[-0.01em]">FinOps</span>
+    </div>
+    <div className="flex gap-0.5">
+      {['M5 12h14', 'M18 6L6 18M6 6l12 12'].map((d, i) => (
+        <button key={i} className="w-[22px] h-[22px] rounded flex items-center justify-center
+          text-gray-300 hover:text-gray-500 transition-colors">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="2" strokeLinecap="round"><path d={d} /></svg>
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+/* ═══════════════════════════════════════════════════
+   STATE: IDLE  (all synced)
+═══════════════════════════════════════════════════ */
+const IdleView = ({ onSync }) => {
+  const [insight, setInsight] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setInsight(true), 550); return () => clearTimeout(t); }, []);
+
+  return (
+    <div className="px-5 pt-5 pb-5 fade-up">
+      {/* status icon */}
+      <div className="flex justify-center mb-[18px]">
+        <div className="relative">
+          <div className="w-[54px] h-[54px] rounded-full bg-emerald-50 flex items-center justify-center">
+            <div className="w-[37px] h-[37px] rounded-full bg-emerald-500 flex items-center justify-center
+              shadow-[0_4px_12px_rgba(16,185,129,.3)]">
+              <CheckIcon size={17} />
+            </div>
+          </div>
+          {/* ping rings */}
+          <span className="absolute inset-0 rounded-full bg-emerald-400 opacity-0"
+            style={{ animation: 'pingRing 2.4s ease-out infinite' }} />
+        </div>
+      </div>
+
+      {/* headline */}
+      <div className="text-center mb-4">
+        <h2 className="text-[15px] font-bold text-gray-900 tracking-[-0.02em] mb-0.5">Books are healthy</h2>
+        <p className="text-[12px] text-gray-400">42 entries · 0 anomalies</p>
+      </div>
+
+      {/* stats row */}
+      <div className="grid grid-cols-3 gap-[7px] mb-4">
+        {[
+          { v: '42',    l: 'Synced',    c: 'text-gray-800' },
+          { v: '100%',  l: 'Success',   c: 'text-emerald-600' },
+          { v: '23 min',l: 'Next sync', c: 'text-violet-600' },
+        ].map(s => (
+          <div key={s.l} className="text-center px-2 py-[9px] bg-gray-50 rounded-[10px]">
+            <div className={`text-[13px] font-bold ${s.c}`}>{s.v}</div>
+            <div className="text-[11px] text-gray-400 mt-0.5">{s.l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* AI proactive insight */}
+      {insight && (
+        <div className="fade-up mb-4 p-[11px] rounded-[10px] bg-gray-50 border border-gray-100">
+          <div className="flex gap-[9px] items-start">
+            <div className="flex-shrink-0 mt-[1px]"><SparkleIcon size={12} /></div>
+            <div>
+              <p className="text-[12px] text-gray-600 leading-[1.55]">
+                3 bills totalling <span className="font-semibold text-gray-800">₹78,000</span> due
+                in 7 days — Ravi Traders, Priya Enterprises, and 1 more.
+              </p>
+              <button className="text-[11.5px] text-violet-600 font-medium mt-[5px] hover:text-violet-700 transition-colors">
+                Review upcoming →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* live monitor pill */}
+      <div className="flex items-center gap-2 mb-[15px]">
+        <div className="relative w-2 h-2 flex-shrink-0">
+          <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
+          <span className="relative block w-2 h-2 rounded-full bg-emerald-500" />
+        </div>
+        <span className="text-[11.5px] text-gray-400">Monitoring continuously · 4 Feb, 9:32 PM</span>
+      </div>
+
+      <OutlineBtn onClick={onSync}>
+        <RefreshIcon size={13} />
+        Sync Now
+      </OutlineBtn>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════
+   STATE: SYNCING
+═══════════════════════════════════════════════════ */
+const SyncingView = ({ onDone }) => {
+  const [pct, setPct] = useState(0);
+  const [msg, setMsg] = useState('Fetching records from platform...');
+
+  const msgs = [
+    'Fetching records from platform...',
+    'Connecting to Tally...',
+    'Checking 42 entries for conflicts...',
+    'Validating GST and ledger mappings...',
+    'Finalising sync results...',
+  ];
+
+  useEffect(() => {
+    let p = 0, mi = 0;
+    const iv = setInterval(() => {
+      p += Math.random() * 7 + 2;
+      if (p > 99) p = 99;
+      setPct(Math.round(p));
+      const next = Math.floor(p / 22);
+      if (next !== mi && next < msgs.length) { mi = next; setMsg(msgs[next]); }
+    }, 60);
+    const done = setTimeout(() => { clearInterval(iv); setPct(100); setTimeout(onDone, 350); }, 2000);
+    return () => { clearInterval(iv); clearTimeout(done); };
+  }, []);
+
+  return (
+    <div className="px-5 pt-8 pb-7 fade-up">
+      {/* arc spinner */}
+      <div className="flex justify-center mb-5">
+        <svg width="46" height="46" viewBox="0 0 46 46" fill="none" className="spinner">
+          <circle cx="23" cy="23" r="18" stroke="#F3F4F6" strokeWidth="2.5" />
+          <path d="M41 23 A18 18 0 0 0 23 5" stroke="#7C3AED" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+      </div>
+
+      <div className="text-center mb-5">
+        <h2 className="text-[15px] font-semibold text-gray-900 tracking-[-0.02em] mb-1">Syncing 42 entries</h2>
+        <p className="text-[12px] text-gray-400 transition-all">{msg}</p>
+      </div>
+
+      <div className="mb-1">
+        <div className="flex justify-between text-[11px] text-gray-400 mb-1.5">
+          <span>Progress</span><span>{pct}%</span>
+        </div>
+        <div className="h-[5px] rounded-full bg-gray-100 overflow-hidden">
+          <div className="h-full rounded-full bg-violet-500 transition-all duration-100"
+            style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+
+      <p className="text-[11.5px] text-gray-400 text-center mt-4">
+        Usually completes in under 15 seconds
+      </p>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════
+   STATE: REVIEW  (4 items need decisions)
+═══════════════════════════════════════════════════ */
+const ReviewView = ({ onApplyAll, onSkip }) => {
+  const [accepted, setAccepted] = useState([]);
+
+  const issues = [
+    { id: 1, label: 'Unmapped Ledger',   count: 2, conf: 'high',   suggestion: 'Create new ledgers from vendor names' },
+    { id: 2, label: 'Duplicate Voucher', count: 1, conf: 'medium', suggestion: 'Skip and flag for manual review' },
+    { id: 3, label: 'GST Mismatch',      count: 1, conf: 'high',   suggestion: 'Use platform GST rate (18%)' },
+  ];
+
+  const accept = id => setAccepted(a => [...a, id]);
+  const allDone = accepted.length === issues.length;
+
+  return (
+    <div className="px-5 pt-[14px] pb-5 fade-up">
+      {/* AI header */}
+      <div className="flex items-start gap-[10px] mb-4">
+        <div className="w-9 h-9 rounded-[10px] bg-violet-600 flex-shrink-0 flex items-center justify-center
+          shadow-[0_4px_12px_rgba(124,58,237,.25)] mt-0.5">
+          <SparkleIcon size={15} color="white" />
+        </div>
+        <div>
+          <p className="text-[14px] font-semibold text-gray-900 tracking-[-0.02em]">Fin synced 38 entries</p>
+          <p className="text-[12px] text-gray-400 mt-0.5">4 need your decision — fixes prepared</p>
+        </div>
+      </div>
+
+      {/* progress bar */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between text-[11px] mb-[5px]">
+          <span className="text-emerald-600 font-medium">38 auto-synced</span>
+          <span className="text-amber-500 font-medium">4 pending</span>
+        </div>
+        <div className="h-[5px] rounded-full overflow-hidden" style={{ background: '#F3F4F6' }}>
+          <div className="h-full rounded-full" style={{
+            width: '90.5%',
+            background: 'linear-gradient(90deg, #10B981 88%, #F59E0B 88%)',
+          }} />
+        </div>
+      </div>
+
+      {/* issues */}
+      <div className="divide-y divide-gray-50/80 mb-[14px]">
+        {issues.map(issue => {
+          const done = accepted.includes(issue.id);
+          return (
+            <div key={issue.id} className="py-[11px]">
+              <div className="flex items-center justify-between mb-[4px]">
+                <div className="flex items-center gap-[7px]">
+                  <span className={`w-[6px] h-[6px] rounded-full flex-shrink-0 transition-colors ${
+                    done ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                  <span className="text-[13px] font-medium text-gray-800">{issue.label}</span>
+                  <span className="text-[10.5px] font-semibold text-gray-400
+                    bg-gray-100 px-[6px] py-[2px] rounded-full">{issue.count}</span>
+                </div>
+                {done
+                  ? <span className="text-[11.5px] font-semibold text-emerald-600">✓ Applied</span>
+                  : <span className="text-[11px] font-medium"
+                      style={{ color: issue.conf === 'high' ? '#059669' : '#D97706' }}>
+                      {issue.conf === 'high' ? 'High confidence' : 'Review suggested'}
+                    </span>
+                }
+              </div>
+              {!done && (
+                <div className="flex items-center justify-between pl-[13px]">
+                  <span className="text-[12px] text-gray-500">
+                    <span className="text-gray-400">Fin: </span>{issue.suggestion}
+                  </span>
+                  <button onClick={() => accept(issue.id)}
+                    className="text-[12px] font-semibold text-violet-600 hover:text-violet-700
+                      ml-3 flex-shrink-0 transition-colors">
+                    Accept
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* actions */}
+      <PrimaryBtn onClick={onApplyAll}>
+        {allDone
+          ? <><span className="text-[14px] leading-none">✓</span> All Applied — Sync Now</>
+          : <><SparkleIcon size={13} color="white" /> Apply All Suggestions</>
+        }
+      </PrimaryBtn>
+      <div className="mt-2"><LinkBtn onClick={onSkip}>Skip issues · Sync 38 ready →</LinkBtn></div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════
+   STATE: FAILED  (6 entries failed)
+═══════════════════════════════════════════════════ */
+const FailedView = ({ onFix }) => {
+  const [open, setOpen] = useState(null);
+
+  const failures = [
+    {
+      id: 1, label: 'Ledger Not Found',   count: 3, auto: true,
+      why: "'Ravi Traders' is missing from Tally — likely deleted or renamed. I can re-create it from your platform vendor data.",
+    },
+    {
+      id: 2, label: 'Duplicate Voucher',  count: 2, auto: true,
+      why: 'VCH-4421 already exists — entered manually in Tally today. I\'ll assign the next available numbers (VCH-4431, VCH-4432).',
+    },
+    {
+      id: 3, label: 'Company Not Loaded', count: 1, auto: false,
+      why: "Tally's session expired — the company wasn't open when sync ran. Open it in Tally, then click re-sync.",
+    },
+  ];
+
+  return (
+    <div className="px-5 pt-[14px] pb-5 fade-up">
+      {/* header */}
+      <div className="flex items-start gap-[10px] mb-3">
+        <div className="w-9 h-9 rounded-[10px] bg-red-50 border border-red-100
+          flex-shrink-0 flex items-center justify-center mt-0.5">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#DC2626"
+            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <circle cx="12" cy="16" r="0.6" fill="#DC2626" />
+          </svg>
+        </div>
+        <div>
+          <p className="text-[14px] font-semibold text-gray-900 tracking-[-0.02em]">6 entries failed to sync</p>
+          <p className="text-[12px] text-gray-400 mt-0.5">5 can be auto-fixed · 1 needs Tally action</p>
+        </div>
+      </div>
+
+      {/* AI insight */}
+      <div className="flex gap-[9px] items-start p-[11px] rounded-[10px] bg-gray-50 border border-gray-100 mb-4">
+        <div className="flex-shrink-0 mt-[1px]"><SparkleIcon size={12} /></div>
+        <p className="text-[12px] text-gray-600 leading-[1.55]">
+          Manual entries in Tally today caused most failures. I can fix 5 automatically —
+          just re-open the company file for the last one.
+        </p>
+      </div>
+
+      {/* failures */}
+      <div className="divide-y divide-gray-50/80 mb-[14px]">
+        {failures.map(f => (
+          <div key={f.id}>
+            <button onClick={() => setOpen(open === f.id ? null : f.id)}
+              className="w-full flex items-center justify-between py-[11px] text-left">
+              <div className="flex items-center gap-[7px]">
+                <span className={`w-[6px] h-[6px] rounded-full flex-shrink-0 ${
+                  f.auto ? 'bg-amber-400' : 'bg-red-400'}`} />
+                <span className="text-[13px] font-medium text-gray-800">{f.label}</span>
+                <span className="text-[10.5px] font-semibold text-gray-400
+                  bg-gray-100 px-[6px] py-[2px] rounded-full">{f.count}</span>
+              </div>
+              <div className="flex items-center gap-[6px]">
+                <span className={`text-[11px] font-medium px-2 py-[2px] rounded-full
+                  ${f.auto
+                    ? 'text-violet-600 bg-violet-50'
+                    : 'text-red-500 bg-red-50'}`}>
+                  {f.auto ? 'Auto-fixable' : 'Action needed'}
+                </span>
+                {open === f.id ? <ChevUp /> : <ChevDown />}
+              </div>
+            </button>
+            {open === f.id && (
+              <div className="pl-[13px] pb-3 -mt-[3px] fade-up">
+                <p className="text-[12px] text-gray-500 leading-[1.55]">{f.why}</p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* actions */}
+      <PrimaryBtn onClick={onFix}>
+        <SparkleIcon size={13} color="white" />
+        Auto-Fix 5 Entries
+      </PrimaryBtn>
+      <div className="mt-2">
+        <LinkBtn>View all details on Platform →</LinkBtn>
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════
+   WIDGET ORCHESTRATOR
+═══════════════════════════════════════════════════ */
+const Widget = () => {
+  const [state, setState]     = useState('idle');
+  const [nextState, setNext]  = useState(null);
+
+  const goSync = (dest) => { setNext(dest); setState('syncing'); };
+
+  return (
+    <div style={{
+      width: 352,
+      background: '#FFFFFF',
+      borderRadius: 14,
+      border: '1px solid rgba(0,0,0,.09)',
+      boxShadow: `
+        0 0 0 .5px rgba(255,255,255,.2) inset,
+        0 1px 2px rgba(0,0,0,.04),
+        0 4px 12px rgba(0,0,0,.08),
+        0 16px 40px rgba(0,0,0,.12),
+        0 32px 64px rgba(0,0,0,.08)`,
+      overflow: 'hidden',
+    }}>
+      <TitleBar />
+      {state === 'idle'    && <IdleView    key="idle"    onSync={() => goSync('review')} />}
+      {state === 'syncing' && <SyncingView key="syncing" onDone={() => { setState(nextState); setNext(null); }} />}
+      {state === 'review'  && <ReviewView  key="review"  onApplyAll={() => goSync('idle')} onSkip={() => goSync('failed')} />}
+      {state === 'failed'  && <FailedView  key="failed"  onFix={() => goSync('idle')} />}
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Widget />);
+</script>
+</body>
+</html>
