@@ -1,2 +1,7 @@
 # macOS
 .DS_Store
+
+# work-in-progress / scratch
+_reveal_tmp.html
+_dash_*.html
+case/dashboard/_dark_backup/

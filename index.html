@@ -126,6 +126,14 @@
     .theme-btn:active{ transform:rotate(40deg); }
     .theme-btn svg{ width:16px; height:16px; }
     @media(max-width:560px){ .nav-name{ display:none; } }
+    /* mobile nav: trim the pill so it fits phones down to 320px */
+    @media(max-width:560px){
+      #nav{ top:12px; padding:0 12px; }
+      .nav-pill{ padding:5px 5px 5px 7px; gap:1px; max-width:100%; }
+      .nav-lnk{ padding:8px 10px; font-size:12px; }
+      .nav-sep{ display:none; }
+      .theme-btn{ width:38px; height:38px; }
+    }
 
     /* ════════ REVEAL (IntersectionObserver + per-child stagger via --rvi) ════════ */
     .rv{ opacity:0; transform:translateY(28px); transition:opacity var(--dur-3) var(--ease), transform var(--dur-3) var(--ease); }
@@ -156,7 +164,7 @@
       .card:hover{ transform:none; }
       .card:hover .card-go{ transform:none; }
       .card:hover .card-peek{ transform:none; }
-      .card:hover .rcov-win, .card:hover .rcov-peek, .card:hover .rcov-peek2{ transform:none; }
+      .card:hover .th-win{ transform:none; }
       /* featured playground card: no lift, no live-badge pulse */
       .lab-feature:hover{ transform:none; }
       .lab-feature:hover .lf-arr{ transform:none; }
@@ -298,6 +306,13 @@
     /* warm accent -- for "seam" in H1 and kicker dot. use sparingly. */
     .warm{ color:var(--accent-warm); }
 
+    /* mobile hero: let the kicker wrap and scale the fixed-line H1 so it never
+       clips inside its line-masks (the reveal masks are overflow:hidden) */
+    @media(max-width:560px){
+      .kicker{ display:flex; align-items:flex-start; gap:8px; margin-bottom:24px; line-height:1.6; max-width:100%; }
+      .kicker .pulse{ flex:0 0 auto; margin-top:6px; }
+      .hero-h1{ font-size:clamp(19px,5.4vw,30px); line-height:1.08; }
+    }
     .hero-sub{ font-size:clamp(16px,1.5vw,19px); color:var(--mid); line-height:1.72; max-width:54ch; margin-top:36px; }
     .hero-sub em{ color:var(--text); font-style:italic; }
     .hero-row{ display:flex; align-items:center; gap:14px; margin-top:40px; flex-wrap:wrap; }
@@ -335,7 +350,8 @@
     .sec-title{ font-family:var(--serif); font-weight:500; font-size:clamp(30px,4.4vw,52px); letter-spacing:-.025em; line-height:1.04; }
     .sec-title em{ font-style:italic; color:var(--accent); }
     .sec-lead{ font-size:clamp(15px,1.5vw,17px); color:var(--mid); line-height:1.7; max-width:48ch; margin-top:16px; }
-    .work-nda{ font-family:var(--mono); font-size:12px; color:var(--soft); letter-spacing:.03em; line-height:1.6; margin-top:18px; max-width:52ch; }
+    .work-nda{ font-family:var(--mono); font-size:12px; color:var(--soft); letter-spacing:.03em; line-height:1.6; margin-top:18px; white-space:nowrap; }
+    @media(max-width:760px){ .work-nda{ white-space:normal; } }
 
     /* ════════ WORK CARDS ════════ */
     .cards{ display:flex; flex-direction:column; gap:30px; }
@@ -350,18 +366,18 @@
     .card-num .v{ font-family:var(--sans); font-weight:700; font-size:clamp(48px,7vw,82px); letter-spacing:-.05em; line-height:.88; color:#fff; }
     .card-num .l{ font-family:var(--mono); font-size:12px; color:rgba(255,255,255,.8); margin-top:8px; letter-spacing:.04em; text-transform:uppercase; }
     .card-tag{ position:relative; z-index:2; font-family:var(--serif); font-style:italic; font-size:clamp(21px,2.5vw,30px); line-height:1.26; color:#fff; max-width:22ch; text-shadow:0 2px 30px rgba(0,0,0,.35); }
-    .card-body{ padding:30px 38px 34px; display:flex; align-items:flex-start; justify-content:space-between; gap:24px; }
-    .card-co{ font-family:var(--mono); font-size:12px; font-weight:500; color:var(--soft); letter-spacing:.08em; text-transform:uppercase; margin-bottom:10px; }
+    /* slim horizontal meta bar: company · year → pills → arrow */
+    .card-body{ padding:22px 32px; display:flex; align-items:center; gap:22px; }
+    .card-co{ font-family:var(--mono); font-size:12px; font-weight:500; color:var(--soft); letter-spacing:.07em; text-transform:uppercase; flex-shrink:0; white-space:nowrap; }
+    .card-tags{ display:flex; gap:7px; flex-wrap:wrap; }
+    .tag{ font-family:var(--mono); font-size:11.5px; color:var(--mid); border:1px solid var(--hair); border-radius:99px; padding:5px 11px; letter-spacing:.02em; white-space:nowrap; }
+    .card-go{ flex-shrink:0; margin-left:auto; width:44px; height:44px; border-radius:50%; border:1px solid var(--hair2); display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--text); transition:background var(--dur-2) var(--ease), color var(--dur-2), transform var(--dur-2) var(--ease); }
+    /* draft-only title (non-thumb cards) sits above the bar */
+    .card-draft-title{ padding:26px 32px 0; }
     .card-title{ font-family:var(--serif); font-weight:600; font-size:clamp(22px,2.7vw,30px); letter-spacing:-.02em; line-height:1.14; }
-    .card-tags{ display:flex; gap:7px; flex-wrap:wrap; margin-top:18px; }
-    .tag{ font-family:var(--mono); font-size:12px; color:var(--mid); border:1px solid var(--hair); border-radius:99px; padding:5px 12px; letter-spacing:.02em; }
-    /* outcome metrics -- surfaced from the case's own metric set, count up on reveal */
-    .card-metrics{ display:flex; gap:34px; flex-wrap:wrap; margin-top:24px; padding-top:22px; border-top:1px solid var(--hair); }
-    .card-metric{ display:flex; flex-direction:column; gap:6px; }
-    .card-metric-v{ font-family:var(--sans); font-weight:700; font-size:clamp(21px,2.3vw,27px); letter-spacing:-.035em; line-height:1; color:var(--accent); font-variant-numeric:tabular-nums; }
-    .card-metric-l{ font-family:var(--mono); font-size:11px; color:var(--soft); letter-spacing:.05em; text-transform:uppercase; }
-    @media(max-width:640px){ .card-metrics{ gap:22px; margin-top:20px; padding-top:18px; } }
-    .card-go{ flex-shrink:0; width:48px; height:48px; border-radius:50%; border:1px solid var(--hair2); display:flex; align-items:center; justify-content:center; font-size:17px; color:var(--text); transition:background var(--dur-2) var(--ease), color var(--dur-2), transform var(--dur-2) var(--ease); }
+    @media(max-width:720px){
+      .card-body{ gap:16px; padding:20px 24px; }
+    }
     .card:hover .card-go{ background:var(--accent); color:#0C0B09; border-color:var(--accent); transform:rotate(45deg); }
 
     /* product peek -- faint screen image on hover */
@@ -422,55 +438,72 @@
     .card:hover .card-scene::before{ animation:clap var(--dur-2) var(--ease); }
     @keyframes clap{ 0%{transform:rotate(-14deg) scaleX(.5)} 60%{transform:rotate(3deg) scaleX(1)} 100%{transform:rotate(0) scaleX(1)} }
 
-    /* ════════ REFERENCE-STYLE THUMBNAILS ════════ */
-    /* color-blocked panel + floating, framed product screenshots.
-       aesthetic borrowed from an editorial case-study header; recoloured
-       entirely from theme tokens so it holds in both dark and light. */
-    .card-cover.rcov{ padding:0; background:var(--panel); }
-    /* the color blocks -- abutting tonal fields, one warm accent block */
-    .rcov-blocks{ position:absolute; inset:0; z-index:0; overflow:hidden; }
-    .rcov-blocks::after{
-      content:''; position:absolute; inset:0; pointer-events:none;
-      background:radial-gradient(120% 92% at 80% 8%, var(--accent-soft), transparent 58%);
+    /* ════════ EDITORIAL DIPTYCH THUMBNAILS ════════ */
+    /* a balanced two-panel cover: the case's line set in serif on a palette
+       field (left), paired with the real product window (right). */
+    .card-cover.rcov{ padding:0; height:368px; background:var(--panel); display:flex; align-items:stretch; }
+    @media(max-width:640px){ .card-cover.rcov{ height:auto; flex-direction:column; } }
+
+    /* LEFT — editorial palette panel */
+    .th-left{
+      position:relative; width:46%; flex-shrink:0; overflow:hidden;
+      padding:36px 34px; display:flex; flex-direction:column; justify-content:space-between; gap:26px;
     }
-    .rb{ position:absolute; }
-    .rb-1{ inset:0 42% 32% 0; background:color-mix(in srgb, var(--accent) 5%, var(--panel2)); }
-    .rb-2{ inset:0 0 32% 58%; background:color-mix(in srgb, var(--accent) 18%, var(--bg2)); }
-    .rb-3{ inset:68% 0 0 0;   background:var(--panel); }
-    /* faint grid wash, keyed to the top-right accent block, like the site's covers */
-    .rcov-grid{
-      position:absolute; inset:0; z-index:0; opacity:.5; pointer-events:none;
-      background-image:linear-gradient(var(--hair) 1px,transparent 1px),linear-gradient(90deg,var(--hair) 1px,transparent 1px);
-      background-size:46px 46px;
-      -webkit-mask-image:radial-gradient(ellipse 70% 80% at 82% 14%,#000,transparent 72%);
-      mask-image:radial-gradient(ellipse 70% 80% at 82% 14%,#000,transparent 72%);
+    .th-left::before{  /* faint grid wash, keyed to the top-left */
+      content:''; position:absolute; inset:0; z-index:0; opacity:.16; pointer-events:none;
+      background-image:linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px);
+      background-size:40px 40px;
+      -webkit-mask-image:radial-gradient(ellipse 96% 82% at 16% 14%,#000,transparent 76%);
+      mask-image:radial-gradient(ellipse 96% 82% at 16% 14%,#000,transparent 76%);
     }
-    /* floating framed screenshots */
-    .rcov figure{
-      position:absolute; margin:0; border-radius:11px; overflow:hidden;
-      background:var(--panel); border:1px solid var(--hair2); box-shadow:var(--shadow);
+    .th-tally .th-left{ background:linear-gradient(158deg,#a8681e 0%,#7a4814 52%,#38210a 100%); }
+    .th-ocr   .th-left{ background:linear-gradient(158deg,#237789 0%,#134d5e 52%,#082129 100%); }
+    .th-dash  .th-left{ background:linear-gradient(158deg,#2a8153 0%,#175a3d 52%,#0a2417 100%); }
+
+    .th-tag{
+      position:relative; z-index:1; font-family:var(--mono); font-size:11px;
+      letter-spacing:.14em; color:rgba(255,255,255,.82);
+      display:flex; align-items:center; gap:9px;
+    }
+    .th-tag::before{ content:''; width:16px; height:1px; background:rgba(255,255,255,.6); }
+    /* bottom block of the palette panel: title + outcome metrics */
+    .th-left-btm{ position:relative; z-index:1; display:flex; flex-direction:column; gap:20px; }
+    .th-title{
+      font-family:var(--serif); font-weight:600;
+      font-size:clamp(21px,2.2vw,28px); line-height:1.13; letter-spacing:-.02em;
+      color:#fff; text-shadow:0 2px 26px rgba(0,0,0,.3);
+    }
+    .th-metrics{ display:flex; gap:30px; padding-top:20px; border-top:1px solid rgba(255,255,255,.22); }
+    .th-metric{ display:flex; flex-direction:column; gap:7px; }
+    .th-m-v{ font-family:var(--sans); font-weight:700; font-size:21px; letter-spacing:-.03em; line-height:1; color:#fff; font-variant-numeric:tabular-nums; }
+    .th-m-l{ font-family:var(--mono); font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; color:rgba(255,255,255,.62); white-space:nowrap; }
+    @media(max-width:640px){ .th-metrics{ gap:22px; } }
+
+    /* RIGHT — product window panel */
+    .th-right{ position:relative; flex:1; overflow:hidden; }
+    .th-tally .th-right{ background:#2a1908; }
+    .th-ocr   .th-right{ background:#071c25; }
+    .th-dash  .th-right{ background:#081d13; }
+    .th-win{
+      position:absolute; left:34px; top:38px; right:-46px; z-index:1; margin:0;
+      border-radius:12px 12px 0 0; overflow:hidden; background:#141414;
+      border:1px solid rgba(255,255,255,.15); border-bottom:none;
+      box-shadow:0 36px 76px rgba(0,0,0,.5);
       transition:transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease);
     }
-    .rcov figure img{ width:100%; height:auto; display:block; }
-    .rcov-win{ z-index:3; }
-    .rcov-peek{ z-index:2; }
-    .rcov-peek2{ z-index:1; opacity:.9; }
-    /* window chrome -- reuses the site's traffic-dot language */
-    .rcov-bar{
-      display:flex; align-items:center; gap:5px; padding:8px 11px;
-      background:color-mix(in srgb, var(--panel2) 90%, transparent);
-      border-bottom:1px solid var(--hair);
-    }
-    .rcov-bar i{ width:7px; height:7px; border-radius:50%; background:var(--faint); }
-    /* hover: the shots lift and part slightly, echoing the card's own rise */
-    .card:hover .rcov-win{ transform:translateY(-5px) scale(1.02); box-shadow:0 26px 60px rgba(0,0,0,.5); }
-    .card:hover .rcov-peek{ transform:translateY(-3px) translateX(7px); }
-    .card:hover .rcov-peek2{ transform:translateY(-2px) translateX(13px); opacity:1; }
+    .th-bar{ display:flex; align-items:center; gap:5px; padding:9px 13px; background:#1c1c1c; border-bottom:1px solid rgba(255,255,255,.07); }
+    .th-bar i{ width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,.22); }
+    .th-url{ margin-left:10px; font-family:var(--mono); font-size:10px; color:rgba(255,255,255,.42); letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .th-win > img{ width:100%; height:auto; display:block; }
+
+    /* hover: the product window lifts */
+    .card:hover .th-win{ transform:translateY(-6px); box-shadow:0 48px 92px rgba(0,0,0,.6); }
+
     @media(max-width:640px){
-      /* tighten the composition on the shorter mobile cover */
-      .card-cover.rcov .rcov-win{ width:64% !important; left:5% !important; top:22% !important; }
-      .card-cover.rcov .rcov-peek{ width:34% !important; }
-      .card-cover.rcov .rcov-peek2{ display:none; }
+      .th-left{ width:100%; padding:24px 22px; gap:16px; }
+      .th-title{ font-size:23px; }
+      .th-right{ flex:none; height:210px; }
+      .th-win{ left:22px; right:-30px; top:24px; }
     }
 
     /* ════════ PRINCIPLES ════════ */
@@ -542,7 +575,7 @@
     .ws-cat{ font-family:var(--mono); font-size:12px; color:var(--soft); letter-spacing:.08em; text-transform:uppercase; flex-shrink:0; }
 
     /* ════════ CTA ════════ */
-    .cta{ position:relative; overflow:hidden; border-radius:30px; padding:clamp(52px,7vw,96px) clamp(32px,5vw,72px); text-align:center; border:1px solid var(--hair2); background:linear-gradient(150deg, var(--panel2), var(--panel)); box-shadow:var(--shadow); }
+    .cta{ position:relative; text-align:center; padding:clamp(44px,7vw,80px) 0 clamp(32px,4vw,56px); }
     .cta .gov{ position:absolute; inset:0; opacity:.18; background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px); background-size:56px 56px; -webkit-mask-image:radial-gradient(ellipse 70% 70% at 50% 0%,#000,transparent 72%); mask-image:radial-gradient(ellipse 70% 70% at 50% 0%,#000,transparent 72%); }
     .cta .glowblob{ position:absolute; width:50%; height:120%; left:25%; top:-10%; background:radial-gradient(circle, var(--accent-soft), transparent 60%); filter:blur(20px); }
     .cta-eyebrow{ position:relative; font-family:var(--mono); font-size:12px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--soft); margin-bottom:24px; }
@@ -708,7 +741,8 @@
     }
     .case-layers{ display:flex; flex-direction:column; gap:12px; margin-top:28px; }
     .case-layer{ display:flex; gap:20px; align-items:flex-start; padding:20px 24px; border:1px solid var(--hair); border-radius:14px; background:var(--panel); }
-    .case-layer-n{ font-family:var(--mono); font-size:12px; color:var(--accent); letter-spacing:.08em; white-space:nowrap; padding-top:3px; min-width:165px; flex-shrink:0; }
+    .case-layer-n{ font-family:var(--mono); font-size:12px; color:var(--accent); letter-spacing:.08em; white-space:nowrap; padding-top:3px; width:215px; flex-shrink:0; }
+    @media(max-width:640px){ .case-layer{ flex-direction:column; gap:8px; } .case-layer-n{ width:auto; padding-top:0; } }
     .case-layer-title{ font-weight:600; font-size:15px; margin-bottom:5px; }
     .case-layer-desc{ font-size:13.5px; color:var(--mid); line-height:1.7; }
     .case-context-bullets{ display:flex; flex-direction:column; gap:18px; margin-top:28px; }
@@ -728,58 +762,96 @@
     }
     .ts-peek img{ width:100%; height:auto; display:block; }
 
-    /* tally-sync: three-state hero in case study */
-    .ts-hero-cover{
-      background:linear-gradient(135deg,#8a4b12,#c27d1a 55%,#5e3209) !important;
-      display:flex !important; align-items:flex-end !important;
-      justify-content:center !important; gap:14px;
-      padding-bottom:0 !important;
+    /* ════════ CASE HERO — CONCEPT COVERS ════════
+       each cover renders the case's signature interface moment, large and
+       editorial, in its own palette. one idea, legible at a glance. */
+    .concept-cover{
+      height:auto !important; min-height:310px;
+      padding:38px 40px !important;
+      display:flex; flex-direction:column; justify-content:center; gap:24px;
+      position:relative; overflow:hidden;
     }
-    .ts-hero-cover::before{
-      content:''; position:absolute; inset:0; z-index:2; pointer-events:none;
-      background:linear-gradient(90deg,
-        rgba(82,42,6,0.97) 0%, transparent 20%,
-        transparent 80%, rgba(60,30,4,0.97) 100%);
+    .concept-cover .gov{
+      position:absolute; inset:0; opacity:.20; z-index:0;
+      background-image:linear-gradient(rgba(255,255,255,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.5) 1px,transparent 1px);
+      background-size:46px 46px;
+      -webkit-mask-image:radial-gradient(ellipse 92% 92% at 82% 12%,#000,transparent 78%);
+      mask-image:radial-gradient(ellipse 92% 92% at 82% 12%,#000,transparent 78%);
     }
-    .ts-hi{
-      position:relative; z-index:1;
-      height:calc(100% - 24px); width:auto; display:block;
-      border-radius:14px 14px 0 0;
-      box-shadow:0 8px 40px rgba(0,0,0,0.5);
-    }
-    .ts-hi-main{
-      height:calc(100% - 8px);
-      box-shadow:0 20px 64px rgba(0,0,0,0.62), 0 0 0 1.5px rgba(203,164,106,0.2);
-    }
-    .ts-hi-side{ opacity:0.62; }
-
-    /* ocr-verify: layered verification-cockpit hero cover */
-    .ocr-hero-cover{ padding:0 !important; }
-    .ocr-hero-cover .gov{ z-index:0; }
-    .ocr-hero-cover::before{
-      content:''; position:absolute; inset:0; z-index:3; pointer-events:none;
+    /* soft radial lift + edge vignette, keeps text legible over the gradient */
+    .concept-cover::after{
+      content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
       background:
-        linear-gradient(90deg, rgba(9,38,49,0.97) 0%, rgba(9,38,49,0) 24%, rgba(9,38,49,0) 76%, rgba(9,38,49,0.97) 100%),
-        linear-gradient(0deg, rgba(9,38,49,0.5) 0%, transparent 34%);
+        radial-gradient(ellipse 70% 90% at 84% 8%, rgba(255,255,255,.10), transparent 60%),
+        linear-gradient(0deg, rgba(0,0,0,.28) 0%, transparent 42%);
     }
-    .ocr-hi{
-      position:absolute; bottom:0; display:block;
-      border-radius:11px 11px 0 0;
-      box-shadow:0 12px 44px rgba(0,0,0,0.42);
-      border:1px solid rgba(255,255,255,0.10); border-bottom:none;
+    .cc-kicker{
+      font-family:var(--mono); font-size:12px; letter-spacing:.16em;
+      text-transform:uppercase; color:rgba(255,255,255,.66);
+      display:flex; align-items:center; gap:11px; position:relative; z-index:3;
     }
-    .ocr-hi-main{
-      width:47%; left:50%; transform:translateX(-50%); bottom:-6%; z-index:2;
-      box-shadow:0 26px 70px rgba(0,0,0,0.55), 0 0 0 1px rgba(126,196,210,0.30);
+    .cc-kicker::before{ content:''; width:24px; height:1px; background:rgba(255,255,255,.42); }
+    @media(max-width:640px){ .concept-cover{ padding:26px 20px !important; min-height:0; gap:18px; } }
+
+    /* — dashboard: the verdict row (status before figures) — */
+    .cc-verdict{ display:grid; grid-template-columns:repeat(4,1fr); gap:13px; position:relative; z-index:3; }
+    @media(max-width:760px){ .cc-verdict{ grid-template-columns:repeat(2,1fr); } }
+    .cc-vcard{
+      background:rgba(7,24,16,.52); border:1px solid rgba(255,255,255,.13);
+      border-radius:14px; padding:15px 16px 17px; backdrop-filter:blur(4px);
+      display:flex; flex-direction:column; gap:13px;
     }
-    .ocr-hi-l{ width:38%; left:6%; bottom:24%; z-index:1; opacity:0.42;
-      transform:rotate(-3deg); transform-origin:bottom right; }
-    .ocr-hi-r{ width:38%; right:6%; bottom:24%; z-index:1; opacity:0.42;
-      transform:rotate(3deg); transform-origin:bottom left; }
-    @media(max-width:640px){
-      .ocr-hi-main{ width:74%; }
-      .ocr-hi-l, .ocr-hi-r{ display:none; }
+    .cc-vtop{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .cc-vlabel{ font-family:var(--mono); font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:rgba(255,255,255,.5); }
+    .cc-vstatus{ font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; display:flex; align-items:center; gap:6px; color:#6fcf97; white-space:nowrap; }
+    .cc-vstatus i{ width:7px; height:7px; border-radius:50%; background:currentColor; }
+    .cc-vval{ font-size:25px; font-weight:700; letter-spacing:-.03em; color:#fff; line-height:1; }
+    .cc-vdelta{ font-family:var(--mono); font-size:10.5px; color:rgba(255,255,255,.4); }
+    .cc-vcard.is-watch .cc-vstatus{ color:#e3a94e; }
+    .cc-vcard.is-action{
+      border-color:rgba(224,106,96,.62); background:rgba(52,17,13,.5);
+      box-shadow:0 0 0 1px rgba(224,106,96,.28), 0 14px 44px rgba(0,0,0,.4);
     }
+    .cc-vcard.is-action .cc-vstatus{ color:#f0897e; }
+    .cc-vcard.is-action .cc-vval{ color:#f0897e; }
+
+    /* — tally-sync: the state transition (sync failed → sorted) — */
+    .cc-flow{ display:flex; align-items:stretch; gap:16px; position:relative; z-index:3; }
+    @media(max-width:640px){ .cc-flow{ flex-direction:column; gap:10px; } }
+    .cc-state{
+      flex:1; border-radius:14px; padding:18px 20px 20px;
+      display:flex; flex-direction:column; gap:11px;
+      border:1px solid rgba(255,255,255,.13); background:rgba(0,0,0,.24); backdrop-filter:blur(4px);
+    }
+    .cc-state-tag{ font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; display:flex; align-items:center; gap:8px; color:rgba(255,255,255,.72); }
+    .cc-state-tag i{ width:8px; height:8px; border-radius:50%; background:currentColor; }
+    .cc-state-h{ font-size:23px; font-weight:700; letter-spacing:-.03em; color:#fff; line-height:1.04; }
+    .cc-state-sub{ font-family:var(--mono); font-size:11.5px; color:rgba(255,255,255,.52); line-height:1.55; }
+    .cc-state.is-fail{ border-color:rgba(224,106,96,.5); background:rgba(48,16,12,.44); }
+    .cc-state.is-fail .cc-state-tag{ color:#f0897e; }
+    .cc-state.is-ok{ border-color:rgba(111,207,151,.5); background:rgba(13,42,27,.44); }
+    .cc-state.is-ok .cc-state-tag{ color:#6fcf97; }
+    .cc-arrow{ align-self:center; color:rgba(255,255,255,.55); flex-shrink:0; }
+    @media(max-width:640px){ .cc-arrow{ transform:rotate(90deg); align-self:center; } }
+
+    /* — ocr-verify: read → verified extraction ledger — */
+    .cc-extract{
+      position:relative; z-index:3; max-width:560px;
+      border-radius:14px; border:1px solid rgba(255,255,255,.13);
+      background:rgba(5,24,30,.55); backdrop-filter:blur(4px); overflow:hidden;
+    }
+    .cc-xrow{
+      display:grid; grid-template-columns:104px 1fr auto; align-items:center; gap:18px;
+      padding:12px 20px; border-bottom:1px solid rgba(255,255,255,.09);
+    }
+    .cc-xrow:last-child{ border-bottom:none; }
+    .cc-xfield{ font-family:var(--mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:rgba(255,255,255,.46); }
+    .cc-xval{ font-family:var(--mono); font-size:13.5px; color:#fff; letter-spacing:.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cc-xconf{ font-family:var(--mono); font-size:11px; display:flex; align-items:center; gap:7px; white-space:nowrap; }
+    .cc-xconf i{ width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0; }
+    .cc-xok{ color:#6fcf97; }
+    .cc-xwarn{ color:#e3a94e; }
+    @media(max-width:640px){ .cc-xrow{ grid-template-columns:82px 1fr auto; gap:10px; padding:11px 14px; } .cc-xval{ font-size:12px; } }
 
     /* NDA disclaimer banner */
     .cs-nda{
@@ -878,7 +950,12 @@
       border-bottom:1px solid var(--hair); background:var(--panel2); flex-shrink:0;
     }
     .cs-screen-bar span{ width:7px; height:7px; border-radius:50%; display:inline-block; }
-    .cs-screen img{ width:100%; height:auto; display:block; }
+    .cs-screen img{
+      display:block; width:calc(100% - 40px); height:auto; margin:20px auto;
+      border-radius:9px; border:1px solid var(--hair);
+      box-shadow:0 8px 30px rgba(0,0,0,0.30);
+    }
+    @media(max-width:580px){ .cs-screen img{ width:calc(100% - 24px); margin:12px auto; } }
     .cs-screen-ph{
       aspect-ratio:16/9; display:flex; flex-direction:column;
       align-items:center; justify-content:center; gap:6px;
@@ -1041,7 +1118,7 @@
         <a class="nav-lnk" id="nl-work" href="#work" onclick="goWork();return false;">Work</a>
         <a class="nav-lnk" id="nl-about" href="#about" onclick="go('about');return false;">About</a>
         <a class="nav-lnk" id="nl-writing" href="#writing" onclick="go('writing');return false;">Writing</a>
-        <a class="nav-lnk" href="resume.pdf" download>Resume</a>
+        <a class="nav-lnk" href="https://drive.google.com/file/d/1Vq6JejFCTNX3DjusqjIsFYqVc3ZELP28/view?usp=drive_link" target="_blank" rel="noopener">Resume</a>
       </div>
       <span class="nav-rec" id="navRec" aria-hidden="true"><span class="nav-rec-dot"></span>REC <span class="js-tc">00:00:00</span></span>
       <div class="nav-sep"></div>
@@ -1093,9 +1170,8 @@
           <div class="sec-head rv">
             <div>
               <span class="eyebrow" style="margin-bottom:18px;">Selected work</span>
-              <h2 class="sec-title" style="margin-top:16px;">Built &amp; <em>rebuilt.</em></h2>
-              <p class="sec-lead">Sometimes good design means making something new. More often it means finding the exact moment a product lost someone, and earning them back.</p>
-              <p class="work-nda">nda &middot; company &amp; product names changed across these projects. decisions, research, and outcomes are real.</p>
+              <h2 class="sec-title" style="margin-top:16px;">The uncomfortable <em>middle.</em></h2>
+              <p class="work-nda">NDA &middot; Company &amp; product names changed across these projects. Decisions, research, and outcomes are real.</p>
             </div>
             <span class="sec-meta">Since 2022</span>
           </div>
@@ -1226,7 +1302,6 @@ format as a table. be brutal about the "never use" column.</div>
       <section class="sec" style="padding-top:0;">
         <div class="wrap">
           <div class="cta rv">
-            <div class="gov"></div><div class="glowblob"></div>
             <div class="cta-eyebrow">Get in touch</div>
             <h2 class="cta-h">Let's build something<br>that just <span class="amber">works.</span></h2>
             <p class="cta-sub">Starting from a blank canvas, or untangling a workflow that's gone sideways, I'm always up for a good design problem. Or just a chat about films, photography, and why error messages are secretly the hardest thing to write.</p>
@@ -1240,7 +1315,7 @@ format as a table. be brutal about the "never use" column.</div>
 
       <div class="wrap">
         <footer class="footer">
-          <span class="footer-note">Made in Bangalore, somewhere between a filter coffee and one too many rewatches. 2026</span>
+          <span class="footer-note">Made in Bangalore, on filter coffee and one too many rewatches.</span>
           <div class="footer-links">
             <a href="mailto:sandeepbalaji.work@gmail.com">Email</a>
             <a href="https://linkedin.com/in/sandeep-balaji" target="_blank" rel="noopener">LinkedIn</a>
@@ -1257,32 +1332,10 @@ format as a table. be brutal about the "never use" column.</div>
         <section style="padding:40px 0 0;">
           <div class="sec-head rv" style="margin-bottom:32px;">
             <span class="eyebrow" style="margin-bottom:0;">About</span>
-            <a class="sec-meta" href="resume.pdf" download style="cursor:pointer;">Download résumé ↓</a>
+            <a class="sec-meta" href="https://drive.google.com/file/d/1Vq6JejFCTNX3DjusqjIsFYqVc3ZELP28/view?usp=drive_link" target="_blank" rel="noopener" style="cursor:pointer;">View résumé ↗</a>
           </div>
 
-          <!-- resume strip -->
-          <div class="resume-strip rv d1" style="margin-top:32px;">
-            <div class="rs-row">
-              <div class="rs-date">2022 to present</div>
-              <div>
-                <div class="rs-role">Product Designer</div>
-                <div class="rs-co">FinOps</div>
-              </div>
-              <div class="rs-desc">designing the workflows accountants lean on every day. errors, reconciliation, bulk actions, AI features.</div>
-            </div>
-            <!-- prior role: add earlier resume row here, e.g.
-            <div class="rs-row">
-              <div class="rs-date">2020 to 2022</div>
-              <div>
-                <div class="rs-role">Role title</div>
-                <div class="rs-co">Company</div>
-              </div>
-              <div class="rs-desc">one-liner about what you did there.</div>
-            </div>
-            -->
-          </div>
-
-          <p class="lede rv d2" style="margin-top:48px;">I've always been a little obsessed with the <span class="amber">moment right before things break</span>, and how good design quietly steps in so they don't.</p>
+          <p class="lede rv d2" style="margin-top:8px;">I've always been a little obsessed with the <span class="amber">moment right before things break</span>, and how good design quietly steps in so they don't.</p>
         </section>
 
         <section style="padding:48px 0 32px;">
@@ -1397,7 +1450,7 @@ format as a table. be brutal about the "never use" column.</div>
     return `
       <div class="cs-nda rv">
         <svg class="cs-nda-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span>nda &middot; company and product names have been changed. the design decisions, research, and outcomes are real.</span>
+        <span>NDA &middot; Company and product names have been changed. The design decisions, research, and outcomes are real.</span>
       </div>`;
   }
 
@@ -1461,53 +1514,53 @@ format as a table. be brutal about the "never use" column.</div>
       hero:['82%','self-resolve'],
       cover:'linear-gradient(135deg,#8a4b12,#d28f24 55%,#5e3209)',
       metrics:[
-        ['82%','Self-resolve','ticket deflection tracked via in-product event logging over 90 days post-launch'],
-        ['3 min','Avg resolution','ticket-open to ticket-close timestamps, pre/post cohorts. down from 14 min with support'],
-        ['35%','Fewer tickets','sync-related tickets tagged in support tool, Q3 vs Q2 2025 baseline'],
+        ['82%','Self-resolve','Ticket deflection tracked via in-product event logging over 90 days post-launch'],
+        ['3 min','Avg resolution','Ticket-open to ticket-close timestamps, pre/post cohorts. Down from 14 min with support'],
+        ['35%','Fewer tickets','Sync-related tickets tagged in support tool, Q3 vs Q2 2025 baseline'],
       ],
-      context:`FinOps is an AI-powered accounting automation platform for India's CA firms and finance teams. for a huge share of our users, accounting software means Tally, a desktop application that runs the books for half of India's businesses. our connector bridges FinOps's cloud platform with Tally running locally on Windows machines. when it works, it eliminates hours of manual data entry. when it doesn't, it leaves accountants with a red banner and no path forward.`,
+      context:`FinOps is an AI-powered accounting automation platform for India's CA firms and finance teams. For a huge share of our users, accounting software means Tally, a desktop application that runs the books for half of India's businesses. Our connector bridges FinOps's cloud platform with Tally running locally on Windows machines. When it works, it eliminates hours of manual data entry. When it doesn't, it leaves accountants with a red banner and no path forward.`,
       contextBullets:[
-        ['four months just making sync work','ODBC ports, TDX parsing, machines on Windows 7 with antivirus blocking localhost. half our early engineering was environment survival.'],
-        ['error UX wasn\'t the priority, reliability was','the pipeline was breaking twice a week. we built error logging for engineers, routed users through support, and focused on stabilizing the core sync. right call for that stage.'],
-        ['the actual mistake','not that we deferred it. we didn\'t revisit the decision once the pipeline stabilized three months later.'],
+        ['Four months just making sync work','ODBC ports, TDX parsing, machines on Windows 7 with antivirus blocking localhost. Half our early engineering was environment survival.'],
+        ['Error UX wasn\'t the priority, reliability was','The pipeline was breaking twice a week. We built error logging for engineers, routed users through support, and focused on stabilizing the core sync. Right call for that stage.'],
+        ['The actual mistake','Not that we deferred it. We didn\'t revisit the decision once the pipeline stabilized three months later.'],
       ],
-      openingScene:`5:47 pm. last week of GST filing season. a chartered accountant sits in front of two screens. one has Tally, the desktop software that half of India's businesses run their books on. the other has our platform, which is supposed to pull data, process it, and push it back to Tally so she doesn't have to enter 200 bills by hand.<br><br>she selects 44 bills. clicks sync. waits.<br><br>red banner: <strong>"Sync Failed."</strong><br><br>that's it. no explanation. no way to fix it. she opens a spreadsheet she's been maintaining for five months, a tracker with 200+ rows logging every failed sync.`,
-      pullquote:`"our product exists to eliminate manual tracking for accountants. her spreadsheet is tracking our failures."`,
-      whereItStarted:'35% of all Tally support tickets traced back to this one moment, not because sync was unreliable, but because the error screen was useless. i spent two weeks reading 80 support threads before proposing a single solution. three patterns made the problem legible.',
+      openingScene:`5:47 pm. Last week of GST filing season. A chartered accountant sits in front of two screens. One has Tally, the desktop software that half of India's businesses run their books on. The other has our platform, which is supposed to pull data, process it, and push it back to Tally so she doesn't have to enter 200 bills by hand.<br><br>She selects 44 bills. Clicks sync. Waits.<br><br>Red banner: <strong>"Sync Failed."</strong><br><br>That's it. No explanation. No way to fix it. She opens a spreadsheet she's been maintaining for five months, a tracker with 200+ rows logging every failed sync.`,
+      pullquote:`"Our product exists to eliminate manual tracking for accountants. Her spreadsheet is tracking our failures."`,
+      whereItStarted:'35% of all Tally support tickets traced back to this one moment, not because sync was unreliable, but because the error screen was useless. I spent two weeks reading 80 support threads before proposing a single solution. Three patterns made the problem legible.',
       patterns:[
-        ['01','users were solving the wrong problem','everyone assumed connectivity issues. restart connector, restart Tally, check wifi. the actual cause was almost always data: a wrong ledger or a duplicate entry. we never gave them the vocabulary to think about it differently.'],
-        ['02','the spreadsheet nobody knew about','a CA firm managing 30+ clients had a 200-row spreadsheet logging every failed sync for five months. found it attached to a support thread. nobody on our team knew it existed.'],
-        ['03','retry-and-pray was the default','3-4 blind retries before giving up and calling support. every failed attempt chipping away at trust. we had turned our support team into the UI for error resolution.'],
+        ['01','Users were solving the wrong problem','Everyone assumed connectivity issues. Restart connector, restart Tally, check wifi. The actual cause was almost always data: a wrong ledger or a duplicate entry. We never gave them the vocabulary to think about it differently.'],
+        ['02','The spreadsheet nobody knew about','A CA firm managing 30+ clients had a 200-row spreadsheet logging every failed sync for five months. Found it attached to a support thread. Nobody on our team knew it existed.'],
+        ['03','Retry-and-pray was the default','3-4 blind retries before giving up and calling support. Every failed attempt chipping away at trust. We had turned our support team into the UI for error resolution.'],
       ],
-      whatITriedFirst:`first attempt: a cleaner error banner with a "contact support" link and a categorised error code. shipped it. nothing moved. support tickets kept coming. reading 80 threads was the uncomfortable thing i should have done first.`,
+      whatITriedFirst:`First attempt: a cleaner error banner with a "contact support" link and a categorised error code. Shipped it. Nothing moved. Support tickets kept coming. Reading 80 threads was the uncomfortable thing I should have done first.`,
       alignmentCards:[
-        ['engineering',`"we're two sprints from multi-company sync that three enterprise accounts are waiting on. if we pull engineers onto this, those deals slip."`],
-        ['product',`"i hear you. but we committed Q1 to leadership. this touches two codebases, connector and platform. what do you want me to cut?"`],
-        ['design (me)',`"support is spending 11 hours a week translating error logs. that's a full-time person. i'm not asking for a dashboard. i'm asking for the minimum that makes support optional."`],
+        ['engineering',`"We're two sprints from multi-company sync that three enterprise accounts are waiting on. If we pull engineers onto this, those deals slip."`],
+        ['product',`"I hear you. But we committed Q1 to leadership. This touches two codebases, connector and platform. What do you want me to cut?"`],
+        ['Design (me)',`"Support is spending 11 hours a week translating error logs. That's a full-time person. I'm not asking for a dashboard. I'm asking for the minimum that makes support optional."`],
       ],
-      alignmentDeadlock:`what broke the deadlock: the backend engineer's error taxonomy. 90%+ of failures mapped to 6-7 root causes. the problem that felt impossibly scoped suddenly had edges. we agreed to a three-week timebox.`,
-      whatIEndedUpDoing:`one principle drove the whole thing: we weren't building error screens. we were building an agent, something that could diagnose, explain, and guide. that reframe changed what we built.`,
+      alignmentDeadlock:`What broke the deadlock: the backend engineer's error taxonomy. 90%+ of failures mapped to 6-7 root causes. The problem that felt impossibly scoped suddenly had edges. We agreed to a three-week timebox.`,
+      whatIEndedUpDoing:`One principle drove the whole thing: we weren't building error screens. We were building an agent, something that could diagnose, explain, and guide. That reframe changed what we built.`,
       architectureLayers:[
-        ['layer 1 · the gate','pre-sync validation','before anything leaves, every selected voucher is checked against Tally. the ready ones sync; the rest are held back and grouped by the exact reason Tally would reject them (ledger not found, GSTIN missing), not an error code.'],
-        ['layer 2 · after the sync','what Tally rejected','when Tally pushes back, the failures come home named and traceable, each carrying its root cause and a path to fix it, so a red row is the start of a fix instead of a support ticket.'],
-        ['layer 3 · upstream','the review queue','the issues that break syncs are caught earlier still, surfaced as plain-language decisions in a review queue and cleared before they ever reach the gate. it is why so little fails by the time you hit sync.'],
+        ['Layer 1 · the gate','Pre-sync validation','Before anything leaves, every selected voucher is checked against Tally. The ready ones sync; the rest are held back and grouped by the exact reason Tally would reject them (ledger not found, GSTIN missing), not an error code.'],
+        ['Layer 2 · after the sync','What Tally rejected','When Tally pushes back, the failures come home named and traceable, each carrying its root cause and a path to fix it, so a red row is the start of a fix instead of a support ticket.'],
+        ['Layer 3 · upstream','The review queue','The issues that break syncs are caught earlier still, surfaced as plain-language decisions in a review queue and cleared before they ever reach the gate. It is why so little fails by the time you hit sync.'],
       ],
-      connectorNote:`the desktop connector carries the same system. green is a calm all-clear: books match Tally, nothing to do, the next sync already scheduled. amber is the pile worth a look before the next run: ledgers to map, a GST head to confirm, a voucher number to set, each with a suggestion ready. red names exactly what Tally rejected and why, in Tally's own words, and links straight into FinOps to fix it. status you can act on, not just read.`,
+      connectorNote:`The desktop connector carries the same system. Green is a calm all-clear: books match Tally, nothing to do, the next sync already scheduled. Amber is the pile worth a look before the next run: ledgers to map, a GST head to confirm, a voucher number to set, each with a suggestion ready. Red names exactly what Tally rejected and why, in Tally's own words, and links straight into FinOps to fix it. Status you can act on, not just read.`,
       screens:[
         'case/tally/layer-1-validation.png',
         'case/tally/layer-2-sync-result.png',
         'case/tally/layer-3-mismatch.png',
       ],
-      tradeoffs:`shipped the pre-sync validation gate as mandatory from day one. users hated it. it felt like a wall before they'd even started. made it optional in sprint two.<br><br>the connector took three rounds of cutting. the first version tried to explain everything on the desktop. the final one shows only the state, the reason in Tally's own words, and the one move that changes it, then sends you into FinOps for the rest.<br><br>V1 covered the top error types. regional Tally encoding variations were out of scope. shipped knowing it was incomplete, because the long tail would have delayed the core fix by months.`,
-      ownership:`i owned the error taxonomy, all copy, the interaction design for all three layers, and the connector UI. PM owned scope prioritisation and the roadmap negotiation. backend engineer owned the error classification API. his taxonomy of 6-7 root causes was what made the whole thing tractable. frontend team implemented both the connector and platform modals.`,
+      tradeoffs:`Shipped the pre-sync validation gate as mandatory from day one. Users hated it. It felt like a wall before they'd even started. Made it optional in sprint two.<br><br>The connector took three rounds of cutting. The first version tried to explain everything on the desktop. The final one shows only the state, the reason in Tally's own words, and the one move that changes it, then sends you into FinOps for the rest.<br><br>V1 covered the top error types. Regional Tally encoding variations were out of scope. Shipped knowing it was incomplete, because the long tail would have delayed the core fix by months.`,
+      ownership:`I owned the error taxonomy, all copy, the interaction design for all three layers, and the connector UI. PM owned scope prioritisation and the roadmap negotiation. Backend engineer owned the error classification API. His taxonomy of 6-7 root causes was what made the whole thing tractable. Frontend team implemented both the connector and platform modals.`,
       reflections:[
-        ['shipped the validation gate too aggressively','mandatory from day one. users hated it. made optional in sprint two, which should have been the initial call.'],
-        ['three rounds of cutting the connector','first version too dense. kept cutting until each state was a headline, the reason, and a single action. took longer than it should have.'],
-        ['shipped knowing it was incomplete','V1 covered the top error types. regional language variations missing. right call, because the long tail would have delayed the core fix by months.'],
-        ['the CA firm with the 200-row spreadsheet','they stopped maintaining it.'],
+        ['Shipped the validation gate too aggressively','Mandatory from day one. Users hated it. Made optional in sprint two, which should have been the initial call.'],
+        ['Three rounds of cutting the connector','First version too dense. Kept cutting until each state was a headline, the reason, and a single action. Took longer than it should have.'],
+        ['Shipped knowing it was incomplete','V1 covered the top error types. Regional language variations missing. Right call, because the long tail would have delayed the core fix by months.'],
+        ['The CA firm with the 200-row spreadsheet','They stopped maintaining it.'],
       ],
-      outcomeDetail:`82% of people now resolve sync failures themselves without raising a ticket. average resolution time dropped from 14 minutes to 3. sync-related support tickets fell 35% quarter-over-quarter.<br><br>35% is 35%, not 80%. there's a long tail of edge cases we didn't cover: older Tally versions, regional encoding variations, users who genuinely prefer support. this was a meaningful dent, not a clean sweep.`,
-      outcomeMethodology:`self-resolution rate: support ticket deflection tracked via in-product event logging over 90 days post-launch · resolution time: ticket-open to ticket-close timestamps, pre/post cohorts · ticket reduction: sync-related tickets as tagged in support tool, Q3 vs Q2 2025`,
+      outcomeDetail:`82% of people now resolve sync failures themselves without raising a ticket. Average resolution time dropped from 14 minutes to 3. Sync-related support tickets fell 35% quarter-over-quarter.<br><br>35% is 35%, not 80%. There's a long tail of edge cases we didn't cover: older Tally versions, regional encoding variations, users who genuinely prefer support. This was a meaningful dent, not a clean sweep.`,
+      outcomeMethodology:`Self-resolution rate: support ticket deflection tracked via in-product event logging over 90 days post-launch · Resolution time: ticket-open to ticket-close timestamps, pre/post cohorts · Ticket reduction: sync-related tickets as tagged in support tool, Q3 vs Q2 2025`,
       tags:['Enterprise UX','Error States','Workflow Design'],
     },
     {
@@ -1518,7 +1571,7 @@ format as a table. be brutal about the "never use" column.</div>
       surface:'Payables, bill verification',
       focus:'AI transparency, data-viz',
       tag:"The system could see everything. The person checking its work was squinting in the dark.",
-      hero:['-28%','verify time'],
+      hero:['-28%','Verify time'],
       cover:'linear-gradient(135deg,#15485a,#2f8597 55%,#0c2e3a)',
       metrics:[
         ['-28%','Verify time','Per-bill timers from bill-open to commit, pre/post cohorts over 60 days'],
@@ -1560,34 +1613,34 @@ format as a table. be brutal about the "never use" column.</div>
       hero:['1','screen'],
       cover:'linear-gradient(135deg,#14432f,#2f7d54 55%,#0c281b)',
       metrics:[
-        ['1','Screen to a read','one dashboard answers cash, profit, receivables and payables before any report is pulled'],
-        ['4','Health signals','cash, profit, receivables, payables, each status-coded with a trend line and a delta'],
-        ['MTD&rarr;FY','One period control','a single toggle reframes every number on the screen, from month-to-date to full year'],
+        ['1','Screen to a read','One dashboard answers cash, profit, receivables and payables before any report is pulled'],
+        ['4','Health signals','Cash, profit, receivables, payables, each status-coded with a trend line and a delta'],
+        ['MTD&rarr;FY','One period control','A single toggle reframes every number on the screen, from month-to-date to full year'],
       ],
-      context:`FinOps is an accounting automation platform for India's CA firms and finance teams. its ledgers and statements are precise, complete, and built for accountants. a business owner who just wants to know "are we okay this month?" had to export to a spreadsheet and rebuild the view by hand. the product held the answer and made you go find it.`,
-      openingScene:`the numbers were all there, locked inside ledgers and statements built for accountants rather than owners. to answer a question as simple as "are we healthy this month?" someone had to export to a spreadsheet and rebuild the view by hand.<br><br>the brief that came in was "add more charts." the brief that mattered was the opposite: <strong>put the decision first, and let the detail wait until it is asked for.</strong>`,
-      pullquote:`"lead with the verdict. keep the evidence one click away."`,
-      whatITriedFirst:`the first version was a wall of charts. every metric the finance team could name got a card, each with its own toggles, and the page technically showed everything. in testing, an owner scrolled for ten seconds and asked the exact question the dashboard was meant to answer: "so are we fine or not?" completeness was the problem, not the fix. a dashboard that shows everything decides nothing.`,
-      whatIEndedUpDoing:`i designed for the question, not the query. the top of the screen is a verdict, not a data dump, and everything below it is evidence that waits until the verdict sends you looking. status first, detail on demand.`,
+      context:`FinOps is an accounting automation platform for India's CA firms and finance teams. Its ledgers and statements are precise, complete, and built for accountants. A business owner who just wants to know "are we okay this month?" Had to export to a spreadsheet and rebuild the view by hand. The product held the answer and made you go find it.`,
+      openingScene:`The numbers were all there, locked inside ledgers and statements built for accountants rather than owners. To answer a question as simple as "are we healthy this month?" Someone had to export to a spreadsheet and rebuild the view by hand.<br><br>The brief that came in was "add more charts." The brief that mattered was the opposite: <strong>put the decision first, and let the detail wait until it is asked for.</strong>`,
+      pullquote:`"Lead with the verdict. Keep the evidence one click away."`,
+      whatITriedFirst:`The first version was a wall of charts. Every metric the finance team could name got a card, each with its own toggles, and the page technically showed everything. In testing, an owner scrolled for ten seconds and asked the exact question the dashboard was meant to answer: "so are we fine or not?" Completeness was the problem, not the fix. A dashboard that shows everything decides nothing.`,
+      whatIEndedUpDoing:`I designed for the question, not the query. The top of the screen is a verdict, not a data dump, and everything below it is evidence that waits until the verdict sends you looking. Status first, detail on demand.`,
       approachSteps:[
-        ['01','answer the first question first',`the top row isn't data, it's a verdict. cash, profit, receivables and payables each carry a plain-language status: healthy, profitable, action, watch. colour-coded, with a trend line and a delta against the prior period. before a single chart, the owner already knows where to look.`],
-        ['02','every chart earns its place',`each panel answers one question and offers the view that fits it. P&L flips between a ledger table and a waterfall, revenue to net, with net margin called out as the takeaway. cash inflow and outflow sit next to the expense mix, so cause sits beside effect. no decoration, every mark is load-bearing.`],
-        ['03','make working capital legible',`payables and receivables sit side by side with the metrics that actually govern cash: DPO and DSO against a target rail, and ageing buckets that show how much money is stuck and for how long. "121 days, high" in red says more than a table of invoices ever could.`],
+        ['01','Answer the first question first',`The top row isn't data, it's a verdict. Cash, profit, receivables and payables each carry a plain-language status: healthy, profitable, action, watch. Colour-coded, with a trend line and a delta against the prior period. Before a single chart, the owner already knows where to look.`],
+        ['02','Every chart earns its place',`Each panel answers one question and offers the view that fits it. P&L flips between a ledger table and a waterfall, revenue to net, with net margin called out as the takeaway. Cash inflow and outflow sit next to the expense mix, so cause sits beside effect. No decoration, every mark is load-bearing.`],
+        ['03','Make working capital legible',`Payables and receivables sit side by side with the metrics that actually govern cash: DPO and DSO against a target rail, and ageing buckets that show how much money is stuck and for how long. "121 days, high" in red says more than a table of invoices ever could.`],
       ],
       screens:[
-        ['case/dashboard/hero-overview.png','the whole picture, once','status-coded headline metrics up top; performance, P&L, cash flow and expense mix below, all reading from the same period control.'],
-        ['case/dashboard/kpi.png','status before figures','"AR overdue, action" in red pulls the eye exactly where a decision is owed. the rupee amount is the second thing you read, not the first.'],
-        ['case/dashboard/pnl.png','revenue to net, visibly','the waterfall shows what each line does to profit. the ledger toggle is there for anyone who wants the raw table.'],
-        ['case/dashboard/cashflow.png','where the money moved','a net-cash line over inflow and outflow bars, paired with a top-ledger expense breakdown. cause sitting next to effect.'],
-        ['case/dashboard/working-capital.png','targets, not just totals','each metric is measured against where it should be. the rail turns green on target and red when it drifts, so "is this a problem?" is answered visually.'],
+        ['case/dashboard/hero-overview.png','The whole picture, once','Status-coded headline metrics up top; performance, P&L, cash flow and expense mix below, all reading from the same period control.'],
+        ['case/dashboard/kpi.png','Status before figures','"AR overdue, action" in red pulls the eye exactly where a decision is owed. The rupee amount is the second thing you read, not the first.'],
+        ['case/dashboard/pnl.png','Revenue to net, visibly','The waterfall shows what each line does to profit. The ledger toggle is there for anyone who wants the raw table.'],
+        ['case/dashboard/cashflow.png','Where the money moved','A net-cash line over inflow and outflow bars, paired with a top-ledger expense breakdown. Cause sitting next to effect.'],
+        ['case/dashboard/working-capital.png','Targets, not just totals','Each metric is measured against where it should be. The rail turns green on target and red when it drifts, so "is this a problem?" Is answered visually.'],
       ],
-      tradeoffs:`hiding detail behind a verdict only works if the verdict is trustworthy, so every status is one tap from the numbers that produced it, and the thresholds that decide "action" versus "watch" are visible rather than magic.<br><br>i also resisted personalisation. letting owners rearrange or hide cards would have quietly recreated the everything-dashboard i was trying to kill, so the layout is opinionated on purpose. the cost is flexibility for power users, paid to keep the default legible.`,
-      ownership:`i owned the information architecture, the status model and its thresholds, the chart choices, and all copy. the PM owned which periods and entities shipped first. engineering owned the aggregation layer and pushed back on how much could be computed live per load, so we pre-rolled the headline metrics and lazy-loaded the heavier panels below the fold.`,
+      tradeoffs:`Hiding detail behind a verdict only works if the verdict is trustworthy, so every status is one tap from the numbers that produced it, and the thresholds that decide "action" versus "watch" are visible rather than magic.<br><br>I also resisted personalisation. Letting owners rearrange or hide cards would have quietly recreated the everything-dashboard I was trying to kill, so the layout is opinionated on purpose. The cost is flexibility for power users, paid to keep the default legible.`,
+      ownership:`I owned the information architecture, the status model and its thresholds, the chart choices, and all copy. The PM owned which periods and entities shipped first. Engineering owned the aggregation layer and pushed back on how much could be computed live per load, so we pre-rolled the headline metrics and lazy-loaded the heavier panels below the fold.`,
       reflections:[
-        ['started with charts, not questions','the first cut optimised for coverage and buried the decision. reframing the top row as a verdict was the change that made the rest of the screen make sense.'],
-        ['status thresholds needed owners in the room','my first "action versus watch" cut-offs were designer guesses. sitting with a few business owners moved the lines, and a couple of signals that felt urgent to me turned out to be noise to them.'],
+        ['Started with charts, not questions','The first cut optimised for coverage and buried the decision. Reframing the top row as a verdict was the change that made the rest of the screen make sense.'],
+        ['Status thresholds needed owners in the room','My first "action versus watch" cut-offs were designer guesses. Sitting with a few business owners moved the lines, and a couple of signals that felt urgent to me turned out to be noise to them.'],
       ],
-      outcomeDetail:`the dashboard closes the gap between having data and understanding it. an owner reads cash, profit, receivables and payables on a single screen, status first and detail on demand, without exporting anything or waiting on the accounts team. the shift is small to describe and large in practice: from "pull a report" to "open the app."`,
+      outcomeDetail:`The dashboard closes the gap between having data and understanding it. An owner reads cash, profit, receivables and payables on a single screen, status first and detail on demand, without exporting anything or waiting on the accounts team. The shift is small to describe and large in practice: from "pull a report" to "open the app."`,
       outcomeMethodology:'',
       tags:['Data Visualisation','Information Design','Dashboards','Fintech'],
     },
@@ -1763,33 +1816,34 @@ format as a table. be brutal about the "never use" column.</div>
     </svg>`,
   };
 
-  /* ── REFERENCE-STYLE THUMBNAILS ──
-     for cases with real screenshots: a color-blocked panel (theme tokens)
-     with two floating, framed product shots. cases without an entry here
-     fall back to the storyboard SVG cover above. */
-  /* each entry lists floating frames back-to-front. cls sets stacking:
-     rcov-peek2 (back) < rcov-peek < rcov-win (front). */
+  /* ── EDITORIAL DEVICE THUMBNAILS ──
+     for cases with real screenshots: a colour-blocked field (keyed to the
+     case palette) carrying a large browser (main product screen) and a phone
+     peek. cases without an entry fall back to the storyboard SVG cover above. */
   const THUMBS = {
-    'dashboard':{ frames:[
-      { cls:'rcov-peek', src:'case/dashboard/card-peek.png',     bar:false, pos:'right:4.5%;top:15%;width:33%;' },
-      { cls:'rcov-win',  src:'case/dashboard/hero-overview.png', bar:true,  pos:'left:5%;top:24%;width:57%;' },
-    ]},
-    'ocr-verify':{ frames:[
-      { cls:'rcov-peek', src:'case/ocr/read-extract.png',   bar:true, pos:'right:5%;top:31%;width:31%;' },
-      { cls:'rcov-win',  src:'case/ocr/verify-cockpit.png', bar:true, pos:'left:6%;top:21%;width:59%;' },
-    ]},
-    'tally-sync':{ frames:[
-      { cls:'rcov-peek2', src:'case/tally/connector-red.png',   bar:true, pos:'left:57%;top:33%;width:23%;' },
-      { cls:'rcov-peek',  src:'case/tally/connector-amber.png', bar:true, pos:'left:33%;top:24%;width:25%;' },
-      { cls:'rcov-win',   src:'case/tally/connector-green.png', bar:true, pos:'left:8%;top:13%;width:28%;' },
-    ]},
+    'dashboard':{ palette:'th-dash', tag:'INSIGHTS · DASHBOARD',
+      browser:{ src:'case/dashboard/hero-overview.png', url:'finops.app/insights' } },
+    'ocr-verify':{ palette:'th-ocr', tag:'PAYABLES · VERIFY',
+      browser:{ src:'case/ocr/verify-cockpit.png', url:'finops.app/payables/verify' } },
+    'tally-sync':{ palette:'th-tally', tag:'CONNECTOR · SYNC',
+      browser:{ src:'case/tally/layer-2-sync-result.png', url:'finops.app/sync' } },
   };
-  const rcovFrame = f => `<figure class="${f.cls}" style="${f.pos}">`
-      + (f.bar ? `<div class="rcov-bar"><i></i><i></i><i></i></div>` : '')
-      + `<img src="${f.src}" alt="" loading="lazy" decoding="async"></figure>`;
-  const renderThumb = t => `<div class="rcov-blocks"><span class="rb rb-1"></span><span class="rb rb-2"></span><span class="rb rb-3"></span></div>`
-    + `<div class="rcov-grid"></div>`
-    + t.frames.map(rcovFrame).join('');
+  const renderThumb = (t,c) =>
+      `<div class="th-left">`
+    +   `<span class="th-tag">${t.tag}</span>`
+    +   `<div class="th-left-btm">`
+    +     `<div class="th-title">${draftText(c.title)}</div>`
+    +     ((c.metrics && c.metrics.length) ? `<div class="th-metrics">${c.metrics.slice(0,3).map(m=>`
+            <div class="th-metric">
+              <span class="th-m-v"${(c.published && !hasTodo(m[0]) && /\d/.test(m[0])) ? ` data-count="${m[0]}"` : ''}>${draftText(m[0])}</span>
+              <span class="th-m-l">${draftText(m[1])}</span>
+            </div>`).join('')}</div>` : '')
+    +   `</div>`
+    + `</div>`
+    + `<div class="th-right">`
+    +   `<figure class="th-win"><div class="th-bar"><i></i><i></i><i></i><span class="th-url">${t.browser.url}</span></div>`
+    +   `<img src="${t.browser.src}" alt="" loading="lazy" decoding="async"></figure>`
+    + `</div>`;
 
   /* ── BUILD CARDS ── */
   /* published only in production; DRAFT_MODE also surfaces unpublished drafts */
@@ -1798,7 +1852,7 @@ format as a table. be brutal about the "never use" column.</div>
   VISIBLE_CASES.forEach((c,i)=>{
     const thumb = THUMBS[c.slug];
     const cover = thumb
-      ? `<div class="card-cover rcov">${renderThumb(thumb)}</div>`
+      ? `<div class="card-cover rcov ${thumb.palette}">${renderThumb(thumb,c)}</div>`
       : `<div class="card-cover" style="background:${c.cover}">
           <div class="gov"></div><div class="sheen"></div>
           <div class="card-svg">${COVERS[c.slug]||''}</div>
@@ -1809,17 +1863,10 @@ format as a table. be brutal about the "never use" column.</div>
     cardsEl.insertAdjacentHTML('beforeend',`
       <a class="card rv ${i?'d1':''}" href="#case/${c.slug}" onclick="goCase('${c.slug}');return false;">
         ${cover}
+        ${thumb ? '' : `<div class="card-draft-title"><div class="card-title">${draftText(c.title)}${c.published?'':draftBadge()}</div></div>`}
         <div class="card-body">
-          <div>
-            <div class="card-co">${c.co} · ${draftText(c.year)}</div>
-            <div class="card-title">${draftText(c.title)}${c.published?'':draftBadge()}</div>
-            <div class="card-tags">${c.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
-            ${(c.metrics && c.metrics.length) ? `<div class="card-metrics">${c.metrics.slice(0,3).map(m=>`
-              <div class="card-metric">
-                <span class="card-metric-v"${(c.published && !hasTodo(m[0]) && /\d/.test(m[0])) ? ` data-count="${m[0]}"` : ''}>${draftText(m[0])}</span>
-                <span class="card-metric-l">${draftText(m[1])}</span>
-              </div>`).join('')}</div>` : ''}
-          </div>
+          <div class="card-co">${c.co} · ${draftText(c.year)}</div>
+          <div class="card-tags">${c.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
           <div class="card-go">↗</div>
         </div>
       </a>`);
@@ -2134,10 +2181,24 @@ format as a table. be brutal about the "never use" column.</div>
 
       <!-- HERO STRIP -->
       <div class="case-sec rv" style="padding-top:0;border-bottom:none;padding-bottom:0;">
-        <div class="case-hero-cover ts-hero-cover">
-          <img src="case/tally/connector-red.png"   class="ts-hi ts-hi-side" alt="" loading="lazy">
-          <img src="case/tally/connector-green.png" class="ts-hi ts-hi-main" alt="" loading="lazy">
-          <img src="case/tally/connector-amber.png" class="ts-hi ts-hi-side" alt="" loading="lazy">
+        <div class="case-hero-cover concept-cover" style="background:linear-gradient(135deg,#8a4b12,#c27d1a 55%,#5e3209);">
+          <div class="gov"></div>
+          <div class="cc-kicker">the same 48 vouchers, ninety seconds apart</div>
+          <div class="cc-flow">
+            <div class="cc-state is-fail">
+              <div class="cc-state-tag"><i></i>Sync Failed</div>
+              <div class="cc-state-h">12 vouchers rejected</div>
+              <div class="cc-state-sub">Tally sent them back. No reason on screen, no next step.</div>
+            </div>
+            <div class="cc-arrow">
+              <svg width="40" height="16" viewBox="0 0 40 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8h32"/><path d="M28 3l6 5-6 5"/></svg>
+            </div>
+            <div class="cc-state is-ok">
+              <div class="cc-state-tag"><i></i>In Sync</div>
+              <div class="cc-state-h">48 of 48 reconciled</div>
+              <div class="cc-state-sub">Every voucher matched. The tracker spreadsheet retired for good.</div>
+            </div>
+          </div>
         </div>
         <div class="case-sec-label">${c.co} &middot; ${c.year}</div>
         <h1 class="sec-title" style="margin-top:10px;max-width:24ch;">${c.title}</h1>
@@ -2356,7 +2417,7 @@ format as a table. be brutal about the "never use" column.</div>
             <span class="browser-dot" style="background:#FF5F57"></span>
             <span class="browser-dot" style="background:#FFBD2E"></span>
             <span class="browser-dot" style="background:#28C840"></span>
-            <div class="browser-url"><span>finops.karbon.app/payables/bills</span></div>
+            <div class="browser-url"><span>finops.app/payables/bills</span></div>
           </div>
           <div class="webapp-stage" id="bvc-stage">
             <iframe id="bvc-frame" src="bill-verification-cockpit.html" frameborder="0" scrolling="no"></iframe>
@@ -2461,11 +2522,31 @@ format as a table. be brutal about the "never use" column.</div>
 
       <!-- HERO STRIP -->
       <div class="case-sec rv" style="padding-top:0;border-bottom:none;padding-bottom:0;">
-        <div class="case-hero-cover ocr-hero-cover" style="background:${c.cover}">
+        <div class="case-hero-cover concept-cover" style="background:${c.cover}">
           <div class="gov"></div>
-          <img src="case/ocr/read-extract.png" class="ocr-hi ocr-hi-l" alt="" loading="lazy">
-          <img src="case/ocr/verified.png" class="ocr-hi ocr-hi-r" alt="" loading="lazy">
-          <img src="case/ocr/verify-cockpit.png" class="ocr-hi ocr-hi-main" alt="" loading="lazy">
+          <div class="cc-kicker">the machine reads · the human decides</div>
+          <div class="cc-extract">
+            <div class="cc-xrow">
+              <span class="cc-xfield">GSTIN</span>
+              <span class="cc-xval">27AABCT3518Q1ZV</span>
+              <span class="cc-xconf cc-xok"><i></i>99% · verified</span>
+            </div>
+            <div class="cc-xrow">
+              <span class="cc-xfield">Amount</span>
+              <span class="cc-xval">₹1,04,690.00</span>
+              <span class="cc-xconf cc-xwarn"><i></i>82% · review</span>
+            </div>
+            <div class="cc-xrow">
+              <span class="cc-xfield">HSN / SAC</span>
+              <span class="cc-xval">9954</span>
+              <span class="cc-xconf cc-xok"><i></i>96% · verified</span>
+            </div>
+            <div class="cc-xrow">
+              <span class="cc-xfield">Ledger</span>
+              <span class="cc-xval">Freight Inward</span>
+              <span class="cc-xconf cc-xwarn"><i></i>74% · review</span>
+            </div>
+          </div>
         </div>
         <div class="case-sec-label">${c.co} &middot; ${c.year}</div>
         <h1 class="sec-title" style="margin-top:10px;max-width:22ch;">${c.title}</h1>
@@ -2521,7 +2602,7 @@ format as a table. be brutal about the "never use" column.</div>
             <span class="browser-dot" style="background:#FF5F57"></span>
             <span class="browser-dot" style="background:#FFBD2E"></span>
             <span class="browser-dot" style="background:#28C840"></span>
-            <div class="browser-url"><span>finops.karbon.app/payables/bills</span></div>
+            <div class="browser-url"><span>finops.app/payables/bills</span></div>
           </div>
           <div class="webapp-stage" id="ocr-bvc-stage">
             <iframe id="ocr-bvc-frame" src="bill-verification-cockpit.html" frameborder="0" scrolling="no"></iframe>
@@ -2614,7 +2695,32 @@ format as a table. be brutal about the "never use" column.</div>
 
       <!-- HERO STRIP -->
       <div class="case-sec rv" style="padding-top:0;border-bottom:none;padding-bottom:0;">
-        <div class="case-hero-cover" style="background:${c.cover}"><div class="gov"></div></div>
+        <div class="case-hero-cover concept-cover" style="background:${c.cover}">
+          <div class="gov"></div>
+          <div class="cc-kicker">status before figures</div>
+          <div class="cc-verdict">
+            <div class="cc-vcard">
+              <div class="cc-vtop"><span class="cc-vlabel">Cash &amp; Bank</span><span class="cc-vstatus"><i></i>Healthy</span></div>
+              <div class="cc-vval">₹1.3 Cr</div>
+              <div class="cc-vdelta">↑ 26.9% vs last period</div>
+            </div>
+            <div class="cc-vcard">
+              <div class="cc-vtop"><span class="cc-vlabel">Net Profit</span><span class="cc-vstatus"><i></i>Profitable</span></div>
+              <div class="cc-vval">₹18.3 L</div>
+              <div class="cc-vdelta">↑ 374% vs last period</div>
+            </div>
+            <div class="cc-vcard is-action">
+              <div class="cc-vtop"><span class="cc-vlabel">AR Overdue</span><span class="cc-vstatus"><i></i>Action</span></div>
+              <div class="cc-vval">₹45.5 L</div>
+              <div class="cc-vdelta">35 open bills</div>
+            </div>
+            <div class="cc-vcard is-watch">
+              <div class="cc-vtop"><span class="cc-vlabel">AP Due · 7d</span><span class="cc-vstatus"><i></i>Watch</span></div>
+              <div class="cc-vval">₹13.2 K</div>
+              <div class="cc-vdelta">↓ 69.5% next 7 days</div>
+            </div>
+          </div>
+        </div>
         <div class="case-sec-label">${c.co} &middot; ${c.year}</div>
         <h1 class="sec-title" style="margin-top:10px;max-width:22ch;">${c.title}</h1>
         <p class="case-body" style="margin-top:18px;">${c.tag}</p>
@@ -2678,7 +2784,7 @@ format as a table. be brutal about the "never use" column.</div>
             <span class="browser-dot" style="background:#FF5F57"></span>
             <span class="browser-dot" style="background:#FFBD2E"></span>
             <span class="browser-dot" style="background:#28C840"></span>
-            <div class="browser-url"><span>finops.karbon.app/insights/dashboard</span></div>
+            <div class="browser-url"><span>finops.app/insights/dashboard</span></div>
           </div>
           <div class="webapp-stage" id="dash-stage">
             <iframe id="dash-frame" src="aia-dashboard.html" frameborder="0" scrolling="no"></iframe>
