@@ -354,7 +354,11 @@
     @media(max-width:760px){ .work-nda{ white-space:normal; } }
 
     /* ════════ WORK CARDS ════════ */
-    .cards{ display:flex; flex-direction:column; gap:30px; }
+    /* sticky deck: each card pins under the nav (cascading 14px per card) and the
+       next card slides over it; the covered card is scaled/dimmed inline by JS */
+    .cards{ display:flex; flex-direction:column; gap:40px; }
+    .cards .card{ position:sticky; top:calc(92px + var(--stack-i,0)*14px); transform-origin:top center; }
+    @media(max-width:640px){ .cards .card{ top:calc(72px + var(--stack-i,0)*10px); } }
     .card{ position:relative; border:1px solid var(--hair); border-radius:24px; overflow:hidden; cursor:pointer; background:var(--panel); box-shadow:var(--shadow); transition:transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), border-color var(--dur-2); }
     .card:hover{ transform:translateY(-7px); border-color:var(--hair2); }
     .card-cover{ position:relative; height:330px; display:flex; align-items:flex-end; padding:38px; overflow:hidden; }
@@ -1861,7 +1865,7 @@ format as a table. be brutal about the "never use" column.</div>
           <div class="card-tag">${draftText(c.tag)}</div>
         </div>`;
     cardsEl.insertAdjacentHTML('beforeend',`
-      <a class="card rv ${i?'d1':''}" href="#case/${c.slug}" onclick="goCase('${c.slug}');return false;">
+      <a class="card rv ${i?'d1':''}" style="--stack-i:${i}" href="#case/${c.slug}" onclick="goCase('${c.slug}');return false;">
         ${cover}
         ${thumb ? '' : `<div class="card-draft-title"><div class="card-title">${draftText(c.title)}${c.published?'':draftBadge()}</div></div>`}
         <div class="card-body">
@@ -2027,6 +2031,29 @@ format as a table. be brutal about the "never use" column.</div>
   /* section light-leak: lift a section's top seam as it crosses mid-viewport */
   const leakIO=new IntersectionObserver(es=>{ es.forEach(e=>e.target.classList.toggle('leak-lit', e.isIntersecting)); }, {rootMargin:'-50% 0px -50% 0px'});
   function observeLeaks(){ document.querySelectorAll('.sec').forEach(s=>leakIO.observe(s)); }
+
+  /* sticky-deck depth: as the next card slides over a pinned one, ease the
+     covered card back (scale + brightness, inline so it wins over .rv/.hover) */
+  (function initDeck(){
+    const deck=[...document.querySelectorAll('#cards .card')];
+    if(deck.length<2 || mqReduce.matches) return;
+    let raf=null;
+    function update(){
+      raf=null;
+      for(let i=0;i<deck.length-1;i++){
+        const cur=deck[i].getBoundingClientRect();
+        if(!cur.height) continue;                 /* home hidden (case view) */
+        const nextTop=deck[i+1].getBoundingClientRect().top;
+        const p=Math.min(1, Math.max(0, (cur.bottom-nextTop)/cur.height));
+        const s=deck[i].style;
+        if(p>0){ s.transform=`scale(${(1-p*.03).toFixed(4)})`; s.filter=`brightness(${(1-p*.1).toFixed(3)})`; }
+        else if(s.transform){ s.transform=''; s.filter=''; }
+      }
+    }
+    addEventListener('scroll', ()=>{ if(!raf) raf=requestAnimationFrame(update); }, {passive:true});
+    addEventListener('resize', ()=>{ if(!raf) raf=requestAnimationFrame(update); }, {passive:true});
+    update();
+  })();
 
   /* wrap each case section label so it can cut up behind a line-mask on reveal */
   function wrapLabels(root){
